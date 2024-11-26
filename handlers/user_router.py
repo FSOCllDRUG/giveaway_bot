@@ -43,19 +43,24 @@ async def cancel_fsm(callback: CallbackQuery, state: FSMContext):
 
 # "/start" handler
 @user_router.message(CommandStart())
-async def cmd_start(message: Message, session: AsyncSession):
-    async with ChatActionSender.typing(bot=bot, chat_id=message.from_user.id):
-        if await orm_get_user_data(session, user_id=message.from_user.id) is not None:
-            await message.answer(f"Снова привет, {message.from_user.full_name}!",
-                                 reply_markup=await main_kb(await redis_check_admin(message.from_user.id)))
-        else:
-            await orm_user_start(session, data={
-                "user_id": message.from_user.id,
-                "username": message.from_user.username,
-                "name": message.from_user.full_name,
-            })
-            await message.answer(f"{message.from_user.full_name}, ты добавлен в базу данных.",
-                                 reply_markup=await main_kb(await redis_check_admin(message.from_user.id)))
+async def cmd_start(message: Message, session: AsyncSession, state: FSMContext):
+    await state.clear()
+    text = ("Добро пожаловать в <b>WinGiveBot</b>!\n\n"
+            "Бот способен организовывать розыгрыши для участников одного или нескольких telegram-каналов "
+            "и автоматически определять победителей в установленное время. "
+            "Также в Нашем боте присутствует капча для защиты от накрутки ботов."
+            "И самое интересное,у нас есть функция создания постов с кнопкой!")
+    if await orm_get_user_data(session, user_id=message.from_user.id) is not None:
+        await message.answer(text,
+                             reply_markup=await main_kb(await redis_check_admin(message.from_user.id)))
+    else:
+        await orm_user_start(session, data={
+            "user_id": message.from_user.id,
+            "username": message.from_user.username,
+            "name": message.from_user.full_name,
+        })
+        await message.answer(text,
+                             reply_markup=await main_kb(await redis_check_admin(message.from_user.id)))
 
 
 @user_router.message(F.text == "Главное меню")

@@ -151,11 +151,12 @@ async def get_giveaway_preview(data: dict, user_id: int = None, bot=None):
         for channel in data["sponsor_channels"]:
             channel = await channel_info(channel)
             text += f"✅ Подпишись на <a href='{channel.invite_link}'>{channel.title}</a>\n"
-    text += "\nНажми на кнопку прикрепленную к посту...👇🏻\nи ВСЁ ТЫ — УЧАСТНИК!\n\n\n"
+    # text += "\nНажми на прикрепленную к посту кнопку👇🏻\n\n\n"
     if "end_datetime" in data:
-        text += f"Результаты розыгрыша: <b>{datetime.datetime.fromisoformat(data['end_datetime']).strftime('%d.%m.%Y %H:%M')}</b>\n\n"
+        text += (f"\nРезультаты розыгрыша: <b"
+                 f">{datetime.datetime.fromisoformat(data['end_datetime']).strftime('%d.%m.%Y %H:%M')}</b>\n\n")
     else:
-        text += f"Результаты розыгрыша будут при достижении <b>{data['end_count']} участника(ов)</b>\n\n"
+        text += f"\nРезультаты розыгрыша будут при достижении <b>{data['end_count']} участника(ов)</b>\n\n"
     if "media_type" in data:
         if data["media_type"] == "photo":
             await bot.send_photo(chat_id=user_id, photo=data["media"], caption=text,
