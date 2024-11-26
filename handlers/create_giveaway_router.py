@@ -74,16 +74,13 @@ class CreateGiveaway(StatesGroup):
 @giveaway_router.message(Command("new_giveaway"))
 @giveaway_router.message(F.text == "Создать розыгрыш")
 async def create_giveaway(message: Message, state: FSMContext, session: AsyncSession):
-    print(await orm_get_channels_for_admin(session=session, admin_user_id=message.from_user.id))
     if not await orm_get_channels_for_admin(session=session, admin_user_id=message.from_user.id):
         await message.answer("❌У вас нет каналов/групп для создания розыгрыша.\n\n"
                              "Чтобы перейти к добавлению канала/группы"
                              " введите /my_channels")
         return
     else:
-        print(await state.get_data())
         await state.clear()
-        print(await state.get_data())
         await state.set_state(CreateGiveaway.media_type)
         await message.answer("<b>СОЗДАНИЕ РОЗЫГРЫША!</b>\n\n"
                              "Отправьте текст для розыгрыша.\n"
@@ -100,24 +97,19 @@ async def create_giveaway_message(message: Message, state: FSMContext):
     async with user_locks[user_id]:
         data = await state.get_data()
         media_group_id = data.get("media_group_id")
-        print(f"Current state data: {data}")  # Выводим данные состояния для отладки
 
         # Проверяем наличие media_group_id в сообщении
         if message.media_group_id:
-            print(f"Received media_group_id: {message.media_group_id}")
             # Если предупреждение для этого media_group_id уже было отправлено, не отправляем его повторно
             if media_group_id == message.media_group_id:
-                print("Warning already sent for this media_group_id")
                 return
             # Обновляем состояние с новым media_group_id и предупреждаем о медиагруппе
             await state.update_data(media_group_id=message.media_group_id)
             await message.answer("❗️Важно:\nВы можете использовать только 1 медиафайл.")
-            print("Warning sent and state updated")
             return
         else:
             # Если сообщение не из медиагруппы, сбрасываем переменную
             await state.update_data(media_group_id=None)
-            print("Reset media_group_id")
 
     await state.update_data(message=message.message_id)
     if message.photo:
@@ -139,10 +131,10 @@ async def create_giveaway_message(message: Message, state: FSMContext):
     if media_id is not None:
         await state.update_data(media=media_id)
     if message.text:
-        text = message.text
+        text = message.html_text
         await message.answer("✅Текст успешно добавлен!")
     elif message.caption:
-        text = message.caption
+        text = message.html_text
         await message.answer("✅Текст успешно добавлен!")
     else:
         text = ""
@@ -334,7 +326,7 @@ async def create_giveaway_channel_id(callback: CallbackQuery, state: FSMContext)
         for channel in data["sponsor_channels"]:
             channel = await channel_info(channel)
             text += f"✅ Подпишись на <a href='{channel.invite_link}'>{channel.title}</a>\n"
-    text += "\nНажми на кнопку прикрепленную к посту...👇🏻\nи ВСЁ ТЫ — УЧАСТНИК!"
+    # text += "\nНажми на прикрепленную к посту кнопку👇🏻\n\n\n"
     await callback.message.answer(f"Сейчас блок условий выглядит так:\n{text}")
     await callback.message.answer("🟡Примечание:\n"
                                   "При выборе победителей розыгрыша <b><i><u>бот проверяет лишь подписки на указанные "
@@ -349,7 +341,7 @@ async def create_giveaway_channel_id(callback: CallbackQuery, state: FSMContext)
 
 @giveaway_router.message(StateFilter(CreateGiveaway.extra_conditions))
 async def get_extra_conditions(message: Message, state: FSMContext):
-    await state.update_data(extra_conditions=message.text)
+    await state.update_data(extra_conditions=message.html_text)
     await message.answer("✅Дополнительные условия сохранены!")
     await state.set_state(CreateGiveaway.post_datetime)
     await message.answer("⏰Когда нужно опубликовать розыгрыш?",
@@ -496,7 +488,6 @@ async def toggle_captcha(callback: CallbackQuery, state: FSMContext):
         await state.update_data(captcha=False)
         new_btns = await captcha_toggle(change_to)
         await callback.message.answer(captcha_off_text)
-    print(str(await state.get_data()))
     await callback.message.edit_reply_markup(reply_markup=new_btns)
 
 
