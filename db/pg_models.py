@@ -1,4 +1,4 @@
-from sqlalchemy import BigInteger, String, Boolean, DateTime, func, ForeignKey, Table, Column
+from sqlalchemy import BigInteger, String, Boolean, DateTime, func, ForeignKey, Table, Column, Text, Integer
 from sqlalchemy.orm import DeclarativeBase, Mapped, mapped_column, relationship
 
 
@@ -38,8 +38,39 @@ class Channel(Base):
 
     id: Mapped[int] = mapped_column(primary_key=True, autoincrement=True)
     channel_id: Mapped[int] = mapped_column(BigInteger, nullable=False, unique=True)
+    is_required: Mapped[bool] = mapped_column(Boolean, default=False)
     admins: Mapped[list["User"]] = relationship(
         "User",
         secondary=user_channel_association,
         back_populates="channels"
     )
+
+
+# class Giveaway(Base):
+#     __tablename__ = "Giveaways"
+#
+#     id: Mapped[int] = mapped_column(primary_key=True, autoincrement=True)
+#     text: Mapped[str] = mapped_column(Text, nullable=True)
+#     media_id: Mapped[str] = mapped_column(Text, nullable=True)
+#     captcha: Mapped[bool] = mapped_column(Boolean, default=False)
+#     end_time: Mapped[DateTime] = mapped_column(DateTime, nullable=True)
+#     max_participants: Mapped[int] = mapped_column(Integer, nullable=True)
+#     is_active: Mapped[bool] = mapped_column(Boolean, default=True)
+#
+#     sponsor_channels: Mapped[list["SponsorChannel"]] = relationship(
+#         "SponsorChannel",
+#         back_populates="giveaway"
+#     )
+#
+#
+# class SponsorChannel(Base):
+#     __tablename__ = "SponsorChannels"
+#
+#     id: Mapped[int] = mapped_column(primary_key=True, autoincrement=True)
+#     channel_id: Mapped[int] = mapped_column(BigInteger, nullable=False)
+#     giveaway_id: Mapped[int] = mapped_column(ForeignKey('Giveaways.id'), nullable=False)
+#
+#     giveaway: Mapped["Giveaway"] = relationship(
+#         "Giveaway",
+#         back_populates="sponsor_channels"
+#     )

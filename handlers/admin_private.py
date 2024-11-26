@@ -6,17 +6,17 @@ from aiogram.types import Message, CallbackQuery
 from aiogram.utils.chat_action import ChatActionSender
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from create_bot import bot, env_admins
-from db.pg_orm_query import orm_count_users, orm_get_mailing_list, orm_not_mailing_users_count, \
-    orm_add_channel, orm_add_admin_to_channel, orm_get_channels_for_admin, orm_get_admins, orm_get_admins_in_channel
+from create_bot import bot
+from db.pg_orm_query import orm_count_users, orm_get_mailing_list, orm_get_required_channels, orm_is_required_channel, \
+    orm_change_required_channel
 from db.r_operations import redis_set_mailing_users, redis_set_mailing_msg, redis_set_msg_from, redis_set_mailing_btns, \
-    redis_check_channel, get_active_users_count, redis_get_channel_id, redis_check_admin
+    get_active_users_count
 from filters.chat_type import ChatType
 from filters.is_admin import IsAdmin
 from keyboards.inline import get_callback_btns
-from keyboards.reply import get_keyboard, admin_kb, main_kb
+from keyboards.reply import get_keyboard, admin_kb
 from tools.mailing import simple_mailing
-from tools.utils import update_admins, cbk_msg, msg_to_cbk
+from tools.utils import cbk_msg, msg_to_cbk, channel_info
 
 admin_private_router = Router()
 admin_private_router.message.filter(ChatType("private"), IsAdmin())
@@ -26,9 +26,13 @@ admin_private_router.message.filter(ChatType("private"), IsAdmin())
 async def get_profile(message: Message, session: AsyncSession):
     async with ChatActionSender.typing(bot=bot, chat_id=message.from_user.id):
         count = await orm_count_users(session)
-        mailing_count = await orm_not_mailing_users_count(session)
+        required_channels = await orm_get_required_channels(session)
+        channels_str = '\n\nОбязательные каналы для функции "Постинг":\n'
+        for channel in required_channels:
+            chat = await bot.get_chat(channel.channel_id)
+            channels_str += f"🔹<a href='{chat.invite_link}'>{chat.title}</a>\n"
         admin_text = (
-            f"👥\nВ базе данных <b>{count}</b> человек, из них отписаны от рассылки {mailing_count}. \n"
+            f"👥\nВ базе данных <b>{count}</b> человек.. \n"
             f"\n\n"
         )
 
@@ -40,8 +44,8 @@ async def get_profile(message: Message, session: AsyncSession):
                        f"День: {active_users_day}\n"
                        f"Неделя: {active_users_week}\n"
                        f"Месяц: {active_users_month}"
+                       f"{channels_str}"
                        )
-
     await message.answer(admin_text, reply_markup=await admin_kb())
 
 
@@ -74,7 +78,7 @@ async def make_mailing(message: Message, state: FSMContext):
 async def get_message_for_mailing(message: Message, state: FSMContext):
     await state.update_data(message=message.message_id)
     await state.set_state(Mailing.buttons)
-    await message.reply("Будем добавлять URL-кнопки к сообщению?", reply_markup=get_callback_btns(
+    await message.reply("Будем добавлять URL-кнопки к сообщению?", reply_markup=await get_callback_btns(
         btns={"Добавить кнопки": "add_btns",
               "Приступить к рассылке": "confirm_mailing", "Сделать другое сообщение для рассылки": "cancel_mailing"}
     )
@@ -95,9 +99,9 @@ async def btns_to_data(message: Message, state: FSMContext):
                          f"\n⬇️")
     await bot.copy_message(chat_id=message.from_user.id, from_chat_id=message.chat.id, message_id=data[
         "message"],
-                           reply_markup=get_callback_btns(btns=data["buttons"]))
-    await message.answer("Приступим к рассылке?", reply_markup=get_callback_btns(btns={"Да": "confirm_mailing",
-                                                                                       "Переделать": "cancel_mailing"}))
+                           reply_markup=await get_callback_btns(btns=data["buttons"]))
+    await message.answer("Приступим к рассылке?", reply_markup=await get_callback_btns(btns={"Да": "confirm_mailing",
+                                                                                             "Переделать": "cancel_mailing"}))
 
 
 @admin_private_router.callback_query(StateFilter(Mailing.message), F.data == "cancel_mailing")
@@ -137,95 +141,6 @@ async def confirm_mailing(callback: CallbackQuery, state: FSMContext, session: A
 # Mailing handlers ends
 
 
-# Update admins list in Redis
-@admin_private_router.message(F.text == "/admin")
-async def upd_admin_list(message: Message, session: AsyncSession):
-    admins = await update_admins(session, env_admins)
-    await message.answer(f'{admins}')
-
-
-# Add channel handlers
-
-
-# @admin_private_router.message(F.text == "Мои каналы")
-# async def get_user_channels(message: Message, session: AsyncSession, state: FSMContext):
-#     user_id = message.from_user.id
-#     channels = await orm_get_channels_for_admin(session, user_id)
-#     if not channels:
-#         await message.answer("У тебя нет каналов 🫥",
-#                              reply_markup=get_callback_btns(btns={"Добавить канал": "add_channel"}))
-#         return
-#     channels_str = ""
-#     btns = {}
-#     for channel in channels:
-#         chat = await bot.get_chat(channel.channel_id)
-#         channels_str += f"<a href='{chat.invite_link}'>{chat.title}</a>\n"
-#         btns[chat.title] = f"channel_{channel.channel_id}"
-#     btns["Добавить канал"] = "add_channel"
-#     await message.answer(f"Твои каналы:\n{channels_str}",
-#                          reply_markup=get_callback_btns(btns=btns, sizes=(1,)))
-#
-#
-# class AddChannel(StatesGroup):
-#     admin_id = State()
-#     channel_id = State()
-#     approve = State()
-#
-#
-# @admin_private_router.callback_query(F.data == "add_channel")
-# async def start_add_channel(callback: CallbackQuery, state: FSMContext):
-#     await state.update_data(admin_id=callback.from_user.id)
-#     await callback.answer("")
-#     await callback.message.answer("Добавь меня в <b>свой</b> канал с <b><i><u>правами администратора</u></i></b>\n\n"
-#                                   "Необходимые права для работы бота:\n"
-#                                   "\n✅ Отправка сообщений"
-#                                   "\n✅ Удаление сообщений"
-#                                   "\n✅ Редактирование сообщений\n\n"
-#                                   "После того как добавишь меня в канал, нажми на кнопку⬇️",
-#                                   reply_markup=get_callback_btns(btns={"Я добавил бота!": "added_to_channel"}))
-#     await state.set_state(AddChannel.channel_id)
-#
-#
-# @admin_private_router.callback_query(StateFilter(AddChannel.channel_id), F.data == "added_to_channel")
-# async def bot_added_to_channel(callback: CallbackQuery, state: FSMContext):
-#     await callback.answer("")
-#     chat_id = await redis_get_channel_id(callback.from_user.id)
-#     await state.update_data(channel_id=chat_id)
-#     chat = await bot.get_chat(chat_id)
-#     print(chat)
-#     chat_title = chat.title
-#     chat_invite_link = chat.invite_link
-#     text = f"<a href='{chat_invite_link}'>{chat_title}</a>"
-#     await callback.message.answer(f"Это этот канал/группа?"
-#                                   f"\n{text}?", reply_markup=get_callback_btns(btns={"Да": "yes", "Отмена": "cancel"}))
-#     await state.set_state(AddChannel.approve)
-
-
-
-#
-# @admin_private_router.callback_query(StateFilter(AddChannel.approve), F.data == "yes")
-# async def check_channel(callback: CallbackQuery, session: AsyncSession, state: FSMContext):
-#     await callback.answer("")
-#     data = await state.get_data()
-#     print(data)
-#     channel_id = data.get("channel_id")
-#     user_id = data.get("admin_id")
-#     if channel_id:
-#         # await callback.message.reply(f"ID канала: {channel_id}")
-#         check = await redis_check_channel(user_id, channel_id)
-#         if check:
-#             await orm_add_channel(session, channel_id)
-#             await orm_add_admin_to_channel(session, user_id, channel_id)
-#             await callback.message.answer("Канал добавлен успешно!",
-#                                           reply_markup=await main_kb(await redis_check_admin(callback.from_user.id)))
-#             await state.clear()
-#
-#         else:
-#             await callback.message.answer("Либо ты меня ещё не добавил в канал, либо что-то пошло не так :(")
-#     else:
-#         await callback.message.answer("Я не смог разобрать твоё сообщение, пожалуйста, следуй условиям описанным выше!")
-
-
 # @admin_private_router.message(F.text == "Список админов", IsOwner())
 # async def add_admin_to_bot(message: Message, session: AsyncSession):
 #     text: str = "Владелец бота:\n"
@@ -255,7 +170,7 @@ async def upd_admin_list(message: Message, session: AsyncSession):
 #             else:
 #                 text += "Не подключен к каналам\n"
 #     await message.answer(text=text,
-#                          reply_markup=get_callback_btns(btns={"Добавить админа": "add_admin",
+#                          reply_markup=await get_callback_btns(btns={"Добавить админа": "add_admin",
 #                                                               "Удалить админа": "del_admin",
 #                                                               "Стукнуть разраба": link_to_dev},
 #                                                         sizes=(1,)))
@@ -269,7 +184,7 @@ async def upd_admin_list(message: Message, session: AsyncSession):
 #     for admin in admins:
 #         btns[f"{admin.name} ({admin.user_id})"] = f"delete_admin_{admin.user_id}"
 #     await callback.message.answer("Добавленные администраторы:",
-#                                   reply_markup=get_callback_btns(btns=btns, sizes=(1,)))
+#                                   reply_markup=await get_callback_btns(btns=btns, sizes=(1,)))
 
 
 # @admin_private_router.callback_query(F.data.startswith("delete_admin_"))
@@ -323,7 +238,7 @@ async def upd_admin_list(message: Message, session: AsyncSession):
 #         if user.username is not None:
 #             text += f"🔑 Логин: @{user.username}\n"
 #         await message.answer(text=text,
-#                              reply_markup=get_callback_btns(btns={"Подтвердить":
+#                              reply_markup=await get_callback_btns(btns={"Подтвердить":
 #                                                                       "confirm"}))
 #         await state.set_state(AddAdmin.confirm)
 #     except ValueError:
@@ -343,19 +258,42 @@ async def upd_admin_list(message: Message, session: AsyncSession):
 #     await state.clear()
 
 
-# @admin_private_router.callback_query(F.data.startswith("channel_"))
-# async def channel_choosen(callback: CallbackQuery):
-#     channel_id = int(callback.data.split("_")[1])
-#     await callback.answer("")
-#     await callback.message.answer(
-#         "Выберите действие:\n",
-#         reply_markup=get_callback_btns(
-#             btns={
-#                 "Создать пост для канала": f"create_post_{channel_id}",
-#             }
-#         )
-#     )
+@admin_private_router.callback_query(F.data.startswith("required_status_"))
+async def change_required_status(callback: CallbackQuery, session: AsyncSession):
+    await callback.answer("")
+    channel_id = int(callback.data.split("_")[-1])
+    channel = await channel_info(channel_id)
+    required = await orm_is_required_channel(session, channel_id)
+    print(type(required))
+    print(required)
 
+    text = f"Канал {channel.title} установлен {'' if required else 'не'}обязательным для " \
+           f"постинга"
+    await callback.message.answer(text=text,
+                                  reply_markup=await get_callback_btns(btns={
+                                      f"Изменить на {'не' if required else ''}обязательный":
+                                          f"change_required_status_{channel_id}_{required}"
+                                  }))
+
+
+@admin_private_router.callback_query(F.data.startswith("change_required_status_"))
+async def change_required_status(callback: CallbackQuery, session: AsyncSession):
+    await callback.answer("")
+    channel_id = int(callback.data.split("_")[-2])
+    status = str(callback.data.split("_")[-1])
+    print(type(status))
+    print(status)
+    channel = await channel_info(channel_id)
+    if status == "True":
+        required = False
+    else:
+        required = True
+    await orm_change_required_channel(session, channel_id, required)
+    text = f"Канал {channel.title} установлен {'' if status else 'не'}обязательным для " \
+           f"постинга"
+    await callback.message.answer(text=text,
+                                  reply_markup=await admin_kb()
+                                  )
 
 # class AddAdminChannel(StatesGroup):
 #     channel_id = State()
@@ -378,7 +316,7 @@ async def upd_admin_list(message: Message, session: AsyncSession):
 #     for admin in available_admins:
 #         btns[f"{admin.name} ({admin.user_id})"] = f"add_admin_{admin.user_id}"
 #     await callback.message.answer("Выберите админа, которого вы хотите добавить к выбранному каналу из списка:",
-#                                   reply_markup=get_callback_btns(btns=btns, sizes=(1,)))
+#                                   reply_markup=await get_callback_btns(btns=btns, sizes=(1,)))
 #     await state.set_state(AddAdminChannel.confirm)
 #
 #
@@ -390,85 +328,3 @@ async def upd_admin_list(message: Message, session: AsyncSession):
 #     await orm_add_admin_to_channel(session, admin_id, channel_id)
 #     await callback.message.answer("Администратор добавлен в канал!")
 #     await state.clear()
-
-
-# class CreatePost(StatesGroup):
-#     channel_id = State()
-#     message = State()
-#     buttons = State()
-#
-#
-# # Channel post handlers starts
-# @admin_private_router.callback_query(StateFilter(None), F.data.startswith("create_post_"))
-# async def make_mailing(callback: CallbackQuery, state: FSMContext):
-#     await state.set_state(CreatePost.channel_id)
-#     await callback.answer("")
-#     channel_id = int(callback.data.split("_")[2])
-#     await state.update_data(channel_id=channel_id)
-#     await callback.message.answer("Отправь сообщение, которое будем постить\n\n"
-#                                   "<b>ВАЖНО</b>\n\n"
-#                                   "В посте может быть приложен только <u>один</u> файл*!\n"
-#                                   "<i>Файл— фото/видео/документ/голосовое сообщение/видео сообщение</i>",
-#                                   reply_markup=get_keyboard("Отмена",
-#                                                             placeholder="Отправь сообщение, для поста"
-#                                                             )
-#                                   )
-#     await state.set_state(CreatePost.message)
-#
-#
-# @admin_private_router.message(StateFilter(CreatePost.message))
-# async def get_message_for_post(message: Message, state: FSMContext):
-#     await state.update_data(message=message.message_id)
-#     await state.set_state(CreatePost.buttons)
-#     await message.reply("Будем добавлять URL-кнопки к посту?", reply_markup=get_callback_btns(
-#         btns={"Да": "add_btns",
-#               "Пост без кнопок": "confirm_post", "Сделать другое сообщение для рассылки": "cancel_post"}
-#     )
-#                         )
-#
-#
-# @admin_private_router.callback_query(StateFilter(CreatePost.buttons), F.data == "add_btns")
-# async def add_btns_post(callback: CallbackQuery):
-#     await callback.answer("")
-#     await callback.message.answer(cbk_msg)
-#
-#
-# @admin_private_router.message(StateFilter(CreatePost.buttons), F.text.contains(":"))
-# async def btns_to_data(message: Message, state: FSMContext):
-#     await state.update_data(buttons=await msg_to_cbk(message))
-#     data = await state.get_data()
-#     await message.answer(f"Вот как будет выглядеть пост в канале:"
-#                          f"\n⬇️")
-#     await bot.copy_message(chat_id=message.from_user.id, from_chat_id=message.chat.id, message_id=data[
-#         "message"],
-#                            reply_markup=get_callback_btns(btns=data["buttons"]))
-#     await message.answer("Приступим к постингу?", reply_markup=get_callback_btns(btns={"Да": "confirm_post",
-#                                                                                        "Переделать": "cancel_post"}))
-#
-#
-# @admin_private_router.callback_query(StateFilter(CreatePost.message), F.data == "cancel_post")
-# @admin_private_router.callback_query(StateFilter(CreatePost.buttons), F.data == "cancel_post")
-# async def cancel_mailing(callback: CallbackQuery, state: FSMContext):
-#     await callback.answer("")
-#     current_state = await state.get_state()
-#
-#     if current_state is not None:
-#         await state.set_state(CreatePost.message)
-#         await callback.message.answer("Отправь сообщение, которое будем постить")
-#
-#
-# @admin_private_router.callback_query(StateFilter("*"), F.data == "confirm_post")
-# async def confirm_mailing(callback: CallbackQuery, state: FSMContext):
-#     async with ChatActionSender.typing(bot=bot, chat_id=callback.message.from_user.id):
-#         await callback.answer("")
-#         data = await state.get_data()
-#         if "buttons" not in data:
-#             await bot.copy_message(chat_id=data["channel_id"], from_chat_id=callback.message.chat.id,
-#                                    message_id=data["message"])
-#         else:
-#             await bot.copy_message(chat_id=data["channel_id"], from_chat_id=callback.message.chat.id,
-#                                    message_id=data["message"],
-#                                    reply_markup=get_callback_btns(btns=data["buttons"]))
-#         await callback.message.answer("Пост успешно создан!")
-#
-#         await state.clear()

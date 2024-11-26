@@ -17,16 +17,20 @@ async def get_callback_btns(
     return keyboard.adjust(*sizes).as_markup()
 
 
-def change_mailing_buttons(user_id, mailing_status):
-    if mailing_status:
+async def captcha_toggle(change_to: str):
+    if change_to == "on":
         buttons = {
-            "Отписаться от рассылки": f"change_mailing_{user_id}_0",
+            "✅Использовать капчу": "captcha_off",
+            "Сохранить розыгрыш": "save_giveaway",
+            "Отмена": "cancel"
         }
     else:
         buttons = {
-            "Подписаться на рассылку": f"change_mailing_{user_id}_1",
+            "❌Использовать капчу": "captcha_on",
+            "Сохранить розыгрыш": "save_giveaway",
+            "Отмена": "cancel"
         }
     return InlineKeyboardMarkup(inline_keyboard=[
-        [InlineKeyboardButton(text=btn_text, callback_data=callback_data) for btn_text, callback_data in
-         buttons.items()]
+        [InlineKeyboardButton(text=btn_text, callback_data=callback_data)]
+        for btn_text, callback_data in buttons.items()
     ])

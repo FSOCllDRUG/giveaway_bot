@@ -7,14 +7,17 @@ from db.pg_engine import create_db
 from db.pg_engine import session_maker
 from handlers.admin_private import admin_private_router
 from handlers.channels import channel_router
+from handlers.create_giveaway_router import giveaway_router
 from handlers.groups import group_router
 from handlers.user_router import user_router
 from middlewares.db import DbSessionMiddleware
 
 
 async def set_commands():
-    commands = [BotCommand(command="start", description="Старт"),
-                BotCommand(command="profile", description="Мой профиль")]
+    commands = [BotCommand(command="start", description="Перезапуск бота"),
+                BotCommand(command="cancel", description="Отменить действие"),
+                BotCommand(command="new_giveaway", description="Создать розыгрыш"),
+                BotCommand(command="my_channels", description="Ваши каналы/группы")]
     await bot.set_my_commands(commands, BotCommandScopeDefault())
 
 
@@ -36,13 +39,13 @@ async def stop_bot():
         pass
 
 
-
 async def main():
     await create_db()
-    dp.include_router(user_router)
     dp.include_router(admin_private_router)
+    dp.include_router(user_router)
     dp.include_router(channel_router)
     dp.include_router(group_router)
+    dp.include_router(giveaway_router)
     dp.update.middleware(DbSessionMiddleware(session_pool=session_maker))
 
     dp.startup.register(start_bot)

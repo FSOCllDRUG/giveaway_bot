@@ -42,10 +42,10 @@ def get_keyboard(
 
 async def main_kb(admin: bool):
     kb_list = [
-        [KeyboardButton(text="Создать конкурс"),
-         KeyboardButton(text="Мои конкурсы")],
-        [KeyboardButton(text="Мои каналы/чаты"),
-         KeyboardButton(text="Создать пост")],
+        [KeyboardButton(text="Создать розыгрыш"),
+         KeyboardButton(text="Мои розыгрыши")],
+        [KeyboardButton(text="Мои каналы/чаты")],
+         # KeyboardButton(text="Создать пост")],
         [KeyboardButton(text="Поддержка")],
     ]
     if admin:
@@ -63,8 +63,8 @@ async def admin_kb():
         # [KeyboardButton(text="Добавить админа"),
         #  KeyboardButton(text="Удалить админа")],
         # [KeyboardButton(text="Посмотреть админов")]
-        [KeyboardButton(text="Мои каналы"),
-         KeyboardButton(text="Рассылка")],
+        # [KeyboardButton(text="Мои каналы/чаты")],
+        [KeyboardButton(text="Рассылка")],
         [KeyboardButton(text="Главное меню")]
     ]
     # if env_admin:

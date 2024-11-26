@@ -10,8 +10,9 @@ from loggers.setup_logger import module_logger
 
 env_admins = [int(admin_id) for admin_id in config("ADMINS").split(",")]
 
-module_logger("aiogram", "logs_bot", "bot.log", logging.DEBUG, console=True)
+module_logger("aiogram", "logs_bot", "bot.log", logging.INFO, console=True)
 module_logger("sqlalchemy", "logs_db", "db.log", logging.WARNING)
-bot = Bot(token=config("BOT_TOKEN"), default=DefaultBotProperties(parse_mode=ParseMode.HTML))
+bot = Bot(token=config("BOT_TOKEN"), default=DefaultBotProperties(parse_mode=ParseMode.HTML,
+                                                                  link_preview_is_disabled=True))
 redis_storage = RedisStorage.from_url(config("REDIS_URL"))
 dp = Dispatcher(storage=redis_storage)

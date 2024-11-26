@@ -1,4 +1,4 @@
-from sqlalchemy import select, func, update, insert
+from sqlalchemy import select, func, update, insert, delete
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from db.pg_models import User, Channel, user_channel_association
@@ -82,6 +82,19 @@ async def orm_add_channel(session: AsyncSession, channel_id: int):
     await session.close()
 
 
+async def orm_delete_channel(session: AsyncSession, channel_id: int):
+    # Удаляем записи из таблицы user_channel_association, связанные с этим каналом
+    await session.execute(
+        delete(user_channel_association).where(user_channel_association.c.channel_id == channel_id)
+    )
+    # Удаляем сам канал
+    await session.execute(
+        delete(Channel).where(Channel.channel_id == channel_id)
+    )
+    await session.commit()
+    await session.close()
+
+
 async def orm_get_channels_for_admin(session: AsyncSession, admin_user_id: int):
     query = select(Channel).join(user_channel_association).where(user_channel_association.c.user_id == admin_user_id)
     result = await session.execute(query)
@@ -127,8 +140,30 @@ async def orm_delete_admin(session: AsyncSession, user_id: int):
     await session.commit()
     await session.close()
 
+
 async def orm_get_admins_in_channel(session: AsyncSession, channel_id: int):
     query = select(User).join(user_channel_association).where(user_channel_association.c.channel_id == channel_id)
     result = await session.execute(query)
     await session.close()
     return result.scalars().all()
+
+
+async def orm_get_required_channels(session: AsyncSession):
+    query = select(Channel).where(Channel.is_required == True)
+    result = await session.execute(query)
+    await session.close()
+    return result.scalars().all()
+
+
+async def orm_change_required_channel(session: AsyncSession, channel_id: int, required: bool):
+    query = update(Channel).where(Channel.channel_id == channel_id).values(is_required=required)
+    await session.execute(query)
+    await session.commit()
+    await session.close()
+
+
+async def orm_is_required_channel(session: AsyncSession, channel_id: int) -> bool:
+    query = select(Channel.is_required).where(Channel.channel_id == channel_id)
+    result = await session.execute(query)
+    await session.close()
+    return result.scalar()

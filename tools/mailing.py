@@ -86,7 +86,7 @@ async def simple_mailing():
                 notsuccess += 1
 
         pbar.update(1)
-        await asyncio.sleep(1 / 10)
+        await asyncio.sleep(1 / 20)
         """
         For 09.2024 Telegram API limit is 30 messages per second
         Tests on local machine showed these results for 150 messages:

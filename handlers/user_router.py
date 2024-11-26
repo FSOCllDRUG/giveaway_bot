@@ -1,5 +1,5 @@
 from aiogram import Router, F
-from aiogram.filters import CommandStart
+from aiogram.filters import CommandStart, Command
 from aiogram.filters import StateFilter
 from aiogram.fsm.context import FSMContext
 from aiogram.fsm.state import StatesGroup, State
@@ -8,7 +8,7 @@ from aiogram.utils.chat_action import ChatActionSender
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from create_bot import bot
-from db.pg_orm_query import orm_add_channel, orm_add_admin_to_channel
+from db.pg_orm_query import orm_add_channel, orm_add_admin_to_channel, orm_get_required_channels, orm_delete_channel
 from db.pg_orm_query import (
     orm_user_start,
     orm_get_user_data,
@@ -20,7 +20,7 @@ from keyboards.inline import get_callback_btns
 from keyboards.reply import main_kb, get_keyboard
 from middlewares.activity_middleware import ActivityMiddleware
 from tools.captcha import generate_captcha
-from tools.utils import cbk_msg, msg_to_cbk, is_subscriber_to_channel, sub_channel_id
+from tools.utils import cbk_msg, msg_to_cbk, is_subscriber_to_channel, channel_info, convert_id, get_channel_hyperlink
 
 user_router = Router()
 user_router.message.middleware(ActivityMiddleware())
@@ -30,7 +30,15 @@ user_router.message.middleware(ActivityMiddleware())
 @user_router.message(StateFilter("*"), F.text.casefold() == "отмена")
 async def cancel_fsm(message: Message, state: FSMContext):
     await state.clear()
-    await message.answer("Отменено", reply_markup=await main_kb(await redis_check_admin(message.from_user.id)))
+    await message.answer("Действие отменено", reply_markup=await main_kb(await redis_check_admin(message.from_user.id)))
+
+
+@user_router.callback_query(StateFilter("*"), F.data == "cancel")
+async def cancel_fsm(callback: CallbackQuery, state: FSMContext):
+    await state.clear()
+    await callback.answer("")
+    await callback.message.answer("Действие отменено",
+                                  reply_markup=await main_kb(await redis_check_admin(callback.from_user.id)))
 
 
 # "/start" handler
@@ -85,21 +93,23 @@ async def check_captcha(message: Message):
         await message.answer("Неправильный текст капчи. Попробуйте еще раз.")
 
 
+@user_router.message(Command("my_channels"))
 @user_router.message(F.text == "Мои каналы/чаты")
-async def get_user_channels(message: Message, session: AsyncSession, state: FSMContext):
+async def get_user_channels(message: Message, session: AsyncSession):
     user_id = message.from_user.id
     channels = await orm_get_channels_for_admin(session, user_id)
     if not channels:
-        await message.answer("У тебя нет каналов/чатов 🫥",
-                             reply_markup=await get_callback_btns(btns={"Добавить канал": "add_channel"}))
+        await message.answer("У тебя нет каналов/групп 🫥",
+                             reply_markup=await get_callback_btns(btns={"Добавить канал/группу": "add_channel"}))
         return
     channels_str = ""
     btns = {}
     for channel in channels:
-        chat = await bot.get_chat(channel.channel_id)
-        channels_str += f"<a href='{chat.invite_link}'>{chat.title}</a>\n"
+        # chat = await bot.get_chat(channel.channel_id)
+        chat = await channel_info(channel.channel_id)
+        channels_str += f"{await get_channel_hyperlink(channel.channel_id)}\n"
         btns[chat.title] = f"channel_{channel.channel_id}"
-    btns["Добавить канал"] = "add_channel"
+    btns["Добавить канал/группу"] = "add_channel"
     await message.answer(f"Твои каналы:\n{channels_str}",
                          reply_markup=await get_callback_btns(btns=btns, sizes=(1,)))
 
@@ -126,18 +136,18 @@ async def start_add_channel(callback: CallbackQuery, state: FSMContext):
 
 @user_router.callback_query(StateFilter(AddChannel.channel_id), F.data == "added_to_channel")
 async def bot_added_to_channel(callback: CallbackQuery, state: FSMContext):
-    await callback.answer("")
     chat_id = await redis_get_channel_id(callback.from_user.id)
-    await state.update_data(channel_id=chat_id)
-    chat = await bot.get_chat(chat_id)
-    # print(chat)
-    chat_title = chat.title
-    chat_invite_link = chat.invite_link
-    text = f"<a href='{chat_invite_link}'>{chat_title}</a>"
-    await callback.message.answer(f"Это этот канал/группа?"
-                                  f"\n{text}?", reply_markup=await get_callback_btns(btns={"Да": "yes", "Отмена":
-        "cancel"}))
-    await state.set_state(AddChannel.approve)
+    if chat_id is None:
+        await callback.answer("")
+        await callback.message.answer("Ты меня ещё никуда не добавил!")
+        return
+    else:
+        await callback.answer("")
+        await state.update_data(channel_id=chat_id)
+        await callback.message.answer(f"Это этот канал/группа:"
+                                      f"\n•{await get_channel_hyperlink(chat_id)}?",
+                                      reply_markup=await get_callback_btns(btns={"Да": "yes", "Отмена": "cancel"}))
+        await state.set_state(AddChannel.approve)
 
 
 @user_router.callback_query(StateFilter(AddChannel.approve), F.data == "yes")
@@ -152,8 +162,11 @@ async def check_channel(callback: CallbackQuery, session: AsyncSession, state: F
         if check:
             await orm_add_channel(session, channel_id)
             await orm_add_admin_to_channel(session, user_id, channel_id)
-            await callback.message.answer("Канал добавлен успешно!",
-                                          reply_markup=await main_kb(await redis_check_admin(callback.from_user.id)))
+            channel = await get_channel_hyperlink(channel_id)
+            await callback.message.answer(
+                f"✅Канал/группа {channel} добавлен(а) успешно!\n\n"
+                "Чтобы создать новый розыгрыш введите команду /new_giveaway",
+                reply_markup=await main_kb(await redis_check_admin(callback.from_user.id)))
             await state.clear()
 
         else:
@@ -164,16 +177,30 @@ async def check_channel(callback: CallbackQuery, session: AsyncSession, state: F
 
 @user_router.callback_query(F.data.startswith("channel_"))
 async def channel_choosen(callback: CallbackQuery):
-    channel_id = int(callback.data.split("_")[1])
+    channel_id = int(callback.data.split("_")[-1])
+    channel = await channel_info(channel_id)
+    btns = {
+        "Создать пост": f"create_post_{channel_id}",
+        "Удалить из бота": f"delete_channel_{channel_id}",
+    }
+    if await redis_check_admin(callback.from_user.id):
+        btns["Изменить статус"] = f"required_status_{channel_id}"
     await callback.answer("")
     await callback.message.answer(
-        "Выберите действие:\n",
+        f"Выберите действие для {channel.title}:\n",
         reply_markup=await get_callback_btns(
-            btns={
-                "Создать пост для канала": f"create_post_{channel_id}",
-            }
+            btns=btns, sizes=(1,)
         )
     )
+
+
+@user_router.callback_query(F.data.startswith("delete_channel_"))
+async def delete_channel(callback: CallbackQuery, session: AsyncSession):
+    await callback.answer("")
+    channel_id = int(callback.data.split("_")[-1])
+    await orm_delete_channel(session, channel_id)
+    await callback.message.answer("Канал удален успешно!",
+                                  reply_markup=await main_kb(await redis_check_admin(callback.from_user.id)))
 
 
 class CreatePost(StatesGroup):
@@ -184,11 +211,11 @@ class CreatePost(StatesGroup):
 
 # Channel post handlers starts
 @user_router.callback_query(StateFilter(None), F.data.startswith("create_post_"))
-async def make_mailing(callback: CallbackQuery, state: FSMContext):
-    if await is_subscriber_to_channel(callback.from_user.id):
+async def make_post(callback: CallbackQuery, state: FSMContext, session: AsyncSession):
+    if await is_subscriber_to_channel(user_id=callback.from_user.id, session=session):
         await state.set_state(CreatePost.channel_id)
         await callback.answer("")
-        channel_id = int(callback.data.split("_")[2])
+        channel_id = int(callback.data.split("_")[-1])
         await state.update_data(channel_id=channel_id)
         await callback.message.answer("Отправь сообщение, которое будем постить\n\n"
                                       "<b>ВАЖНО</b>\n\n"
@@ -201,11 +228,16 @@ async def make_mailing(callback: CallbackQuery, state: FSMContext):
         await state.set_state(CreatePost.message)
     else:
         await callback.answer("")
-        chat = await bot.get_chat(sub_channel_id)
-        chat_invite_link = chat.invite_link
-        await callback.message.answer("Подпишись на наш канал, чтобы использовать эту функцию\n\n"
+        btns = {}
+        required_channels = await orm_get_required_channels(session)
+        for channel in required_channels:
+            chat = await bot.get_chat(channel.channel_id)
+            chat_invite_link = chat.invite_link
+            btns[chat.title] = f"{chat_invite_link}"
+
+        await callback.message.answer("Для доступа к функции 'Постинг' необходимо быть подписчиком канала(ов) ниже.\n\n"
                                       "После подписки попробуй снова!",
-                                      reply_markup=await get_callback_btns(btns={"Подписаться": f"{chat_invite_link}"}))
+                                      reply_markup=await get_callback_btns(btns=btns, sizes=(1,)))
         await state.clear()
 
 
@@ -215,7 +247,7 @@ async def get_message_for_post(message: Message, state: FSMContext):
     await state.set_state(CreatePost.buttons)
     await message.reply("Будем добавлять URL-кнопки к посту?", reply_markup=await get_callback_btns(
         btns={"Да": "add_btns",
-              "Пост без кнопок": "confirm_post", "Сделать другое сообщение для рассылки": "cancel_post"}
+              "Пост без кнопок": "confirm_post", "Переделать": "cancel_post"}
     )
                         )
 
@@ -234,7 +266,7 @@ async def btns_to_data(message: Message, state: FSMContext):
                          f"\n⬇️")
     await bot.copy_message(chat_id=message.from_user.id, from_chat_id=message.chat.id, message_id=data[
         "message"],
-                           reply_markup=get_callback_btns(btns=data["buttons"]))
+                           reply_markup=await get_callback_btns(btns=data["buttons"]))
     await message.answer("Приступим к постингу?", reply_markup=await get_callback_btns(btns={"Да": "confirm_post",
                                                                                              "Переделать": "cancel_post"}))
 
@@ -251,18 +283,22 @@ async def cancel_mailing(callback: CallbackQuery, state: FSMContext):
 
 
 @user_router.callback_query(StateFilter("*"), F.data == "confirm_post")
-async def confirm_mailing(callback: CallbackQuery, state: FSMContext):
+async def confirm_post(callback: CallbackQuery, state: FSMContext):
     async with ChatActionSender.typing(bot=bot, chat_id=callback.message.from_user.id):
         await callback.answer("")
         data = await state.get_data()
         if "buttons" not in data:
-            await bot.copy_message(chat_id=data["channel_id"], from_chat_id=callback.message.chat.id,
-                                   message_id=data["message"])
+            post_id = await bot.copy_message(chat_id=data["channel_id"], from_chat_id=callback.message.chat.id,
+                                             message_id=data["message"])
         else:
-            await bot.copy_message(chat_id=data["channel_id"], from_chat_id=callback.message.chat.id,
-                                   message_id=data["message"],
-                                   reply_markup=get_callback_btns(btns=data["buttons"]))
-        await callback.message.answer("Пост успешно создан!")
+            post_id = await bot.copy_message(chat_id=data["channel_id"], from_chat_id=callback.message.chat.id,
+                                             message_id=data["message"],
+                                             reply_markup=await get_callback_btns(btns=data["buttons"]))
+
+        await callback.message.answer("Пост успешно создан!\n"
+                                      f"Ссылка на пост: https://t.me/c/{await convert_id(data['channel_id'])}"
+                                      f"/{post_id.message_id}",
+                                      reply_markup=await main_kb(await redis_check_admin(callback.from_user.id)))
 
         await state.clear()
 

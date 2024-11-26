@@ -17,5 +17,5 @@ class ActivityMiddleware(BaseMiddleware):
     ) -> Any:
         user_id = event.from_user.id
         timestamp = int(datetime.now(timezone.utc).timestamp())
-        await redis_conn.hset("user_activity", user_id, timestamp)
+        await redis_conn.setex(f"user_activity:{user_id}", 2678400, timestamp)
         return await handler(event, data)
