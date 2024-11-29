@@ -1,0 +1,111 @@
+import asyncio
+import datetime
+from random import shuffle
+
+import pytz
+
+from create_bot import bot
+from db.pg_engine import session_maker
+from db.pg_models import GiveawayStatus
+from db.pg_orm_query import orm_get_giveaway_by_id, orm_get_due_giveaways, \
+    orm_update_giveaway_status, orm_update_giveaway_post_data, orm_add_winners, orm_update_participants_count
+from db.r_operations import redis_create_giveaway, redis_get_participants, redis_expire_giveaway
+from tools.utils import post_giveaway, convert_id, giveaway_post_notification, is_subscribed, \
+    giveaway_result_notification, encode_giveaway_id, get_bot_link_to_start
+
+session = session_maker()
+
+
+async def publish_giveaway(giveaway_id):
+    giveaway = await orm_get_giveaway_by_id(session, giveaway_id)
+    if giveaway:
+        message = await post_giveaway(giveaway)
+
+        # Формируем ссылку на отправленное сообщение
+        chat_id = message.chat.id
+        clear_chat_id = await convert_id(chat_id)
+        message_id = message.message_id
+        post_url = f"https://t.me/c/{clear_chat_id}/{message_id}"
+        await giveaway_post_notification(giveaway, post_url)
+        await redis_create_giveaway(giveaway.id)
+        # Обновляем запись в базе данных
+        await orm_update_giveaway_status(session, giveaway_id, GiveawayStatus.PUBLISHED)
+        await orm_update_giveaway_post_data(session, giveaway_id, post_url, message_id)
+
+
+async def publish_giveaway_results(giveaway_id):
+    giveaway = await orm_get_giveaway_by_id(session, giveaway_id)
+    msg_id = giveaway.message_id
+
+    if giveaway:
+        # Получаем всех участников
+        participants = await redis_get_participants(giveaway_id)
+        if not participants:
+            await bot.send_message(reply_to_message_id=msg_id, chat_id=giveaway.channel_id, text=("Розыгрыш завершен, "
+                                                                                                 "но участников нет."))
+            await orm_update_giveaway_status(session, giveaway.id, GiveawayStatus.FINISHED)
+            return
+
+        # Перемешиваем список участников для случайного выбора
+        shuffle(participants)
+
+        winners = []
+        for user_id in participants:
+            if await is_subscribed(giveaway.sponsor_channel_ids, user_id):
+                winners.append(user_id)
+                if len(winners) == giveaway.winners_count:
+                    break
+
+        # Сообщение о завершении розыгрыша
+        if winners:
+            winner_mentions = []
+            c = 0
+            for winner in winners:
+                c += 1
+                chat = await bot.get_chat(winner)
+                user_name = chat.first_name if chat.first_name else "No name"
+                user_username = f"@{chat.username}" if chat.username else ""
+                winner_mentions.append(f"{c}.<a href='tg://user?id={winner}'>{user_name}</a> ({user_username})")
+
+            giveaway_end_text = f"Розыгрыш завершен!\n\nПобедители:\n{'\n'.join(winner_mentions)}"
+        else:
+            giveaway_end_text = "Розыгрыш завершен, но подходящих победителей нет."
+
+        g_id = await encode_giveaway_id(giveaway.id)
+        giveaway_end_text += f"\n\n<a href='{await get_bot_link_to_start()}checkgive_{g_id}'>Проверить результаты</a>"
+        message = await bot.send_message(reply_to_message_id=msg_id, chat_id=giveaway.channel_id,
+                                         text=giveaway_end_text)
+        await giveaway_result_notification(message, giveaway)        # Обновить статус розыгрыша в базе данных
+        await orm_update_giveaway_status(session, giveaway.id, GiveawayStatus.FINISHED)
+        if winners:
+            await orm_add_winners(session, giveaway.id, winners)
+        await orm_update_participants_count(session, giveaway.id, len(participants))
+        await redis_expire_giveaway(giveaway.id)
+
+
+async def schedule_giveaways():
+    while True:
+        current_time = datetime.datetime.now(pytz.timezone('Europe/Moscow')).replace(tzinfo=None)
+
+        # Получите список розыгрышей, требующих внимания, разделенный по статусам
+        not_published, ready_for_results = await orm_get_due_giveaways(session, current_time)
+
+        if not not_published and not ready_for_results:
+            # Если нет розыгрышей, ждем и проверяем снова через 60 секунд
+            await asyncio.sleep(60)
+            continue
+
+        for giveaway in not_published:
+            giveaway_post_datetime = giveaway.post_datetime.replace(tzinfo=None) if giveaway.post_datetime else None
+            if giveaway_post_datetime <= current_time:
+                await publish_giveaway(giveaway.id)
+
+        for giveaway in ready_for_results:
+            giveaway_end_datetime = giveaway.end_datetime.replace(tzinfo=None) if giveaway.end_datetime else None
+            if giveaway_end_datetime and giveaway_end_datetime <= current_time:
+                await publish_giveaway_results(giveaway.id)
+        await asyncio.sleep(60)  # Проверяйте каждые 60 секунд
+
+
+async def start_scheduler():
+    await schedule_giveaways()
