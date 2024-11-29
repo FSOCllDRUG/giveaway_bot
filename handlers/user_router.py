@@ -3,27 +3,28 @@ from aiogram.filters import CommandStart, Command
 from aiogram.filters import StateFilter
 from aiogram.fsm.context import FSMContext
 from aiogram.fsm.state import StatesGroup, State
-from aiogram.types import Message, CallbackQuery, BufferedInputFile
+from aiogram.types import Message, CallbackQuery
 from aiogram.utils.chat_action import ChatActionSender
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from create_bot import bot
+from create_bot import bot, env_admins
 from db.pg_orm_query import orm_add_channel, orm_add_admin_to_channel, orm_get_required_channels, orm_delete_channel
 from db.pg_orm_query import (
     orm_user_start,
     orm_get_user_data,
     orm_get_channels_for_admin)
-from db.r_engine import redis_conn
 from db.r_operations import redis_check_admin
 from db.r_operations import redis_check_channel, redis_get_channel_id
+from filters.chat_type import ChatType
 from keyboards.inline import get_callback_btns
 from keyboards.reply import main_kb, get_keyboard
 from middlewares.activity_middleware import ActivityMiddleware
-from tools.captcha import generate_captcha
-from tools.utils import cbk_msg, msg_to_cbk, is_subscriber_to_channel, channel_info, convert_id, get_channel_hyperlink
+from tools.texts import cbk_msg
+from tools.utils import msg_to_cbk, channel_info, convert_id, is_subscribed, get_channel_hyperlink
 
 user_router = Router()
 user_router.message.middleware(ActivityMiddleware())
+user_router.message.filter(ChatType("private"))
 
 
 @user_router.message(StateFilter("*"), F.text == "/cancel")
@@ -58,6 +59,7 @@ async def cmd_start(message: Message, session: AsyncSession, state: FSMContext):
             "user_id": message.from_user.id,
             "username": message.from_user.username,
             "name": message.from_user.full_name,
+            "mailing": True if message.from_user.id in env_admins else False
         })
         await message.answer(text,
                              reply_markup=await main_kb(await redis_check_admin(message.from_user.id)))
@@ -66,36 +68,6 @@ async def cmd_start(message: Message, session: AsyncSession, state: FSMContext):
 @user_router.message(F.text == "Главное меню")
 async def main_menu(message: Message):
     await message.answer("Ты в главном меню", reply_markup=await main_kb(await redis_check_admin(message.from_user.id)))
-
-
-# Добавляем обработчик для капчи
-@user_router.message(F.text == "Получить капчу")
-async def get_captcha(message: Message):
-    captcha_text, captcha_image = generate_captcha()
-
-    # Сохраняем капчу в redis с временем жизни (например, 5 минут)
-    await redis_conn.setex(f"captcha:{message.from_user.id}", 300, captcha_text)
-
-    # Отправляем капчу пользователю
-    input_file = BufferedInputFile(captcha_image.getvalue(), filename=f"captcha{message.from_user.id}.png")
-    await message.answer_photo(photo=input_file, caption="Введите текст с изображения:")
-
-
-# Обработчик для проверки ответа капчи
-@user_router.message(F.text.regexp(r"^\d{4}$"))
-async def check_captcha(message: Message):
-    user_id = message.from_user.id
-    user_input = message.text
-
-    # Получаем капчу из redis
-    captcha_text = await redis_conn.get(f"captcha:{user_id}")
-
-    if captcha_text and user_input == captcha_text:
-        await message.answer("Капча пройдена успешно!",
-                             reply_markup=await main_kb(await redis_check_admin(message.from_user.id)))
-        await redis_conn.delete(f"captcha:{user_id}")
-    else:
-        await message.answer("Неправильный текст капчи. Попробуйте еще раз.")
 
 
 @user_router.message(Command("my_channels"))
@@ -110,7 +82,6 @@ async def get_user_channels(message: Message, session: AsyncSession):
     channels_str = ""
     btns = {}
     for channel in channels:
-        # chat = await bot.get_chat(channel.channel_id)
         chat = await channel_info(channel.channel_id)
         channels_str += f"{await get_channel_hyperlink(channel.channel_id)}\n"
         btns[chat.title] = f"channel_{channel.channel_id}"
@@ -159,7 +130,6 @@ async def bot_added_to_channel(callback: CallbackQuery, state: FSMContext):
 async def check_channel(callback: CallbackQuery, session: AsyncSession, state: FSMContext):
     await callback.answer("")
     data = await state.get_data()
-    # print(data)
     channel_id = data.get("channel_id")
     user_id = data.get("admin_id")
     if channel_id:
@@ -170,7 +140,7 @@ async def check_channel(callback: CallbackQuery, session: AsyncSession, state: F
             channel = await get_channel_hyperlink(channel_id)
             await callback.message.answer(
                 f"✅Канал/группа {channel} добавлен(а) успешно!\n\n"
-                "Чтобы создать новый розыгрыш введите команду /new_giveaway",
+                "Чтобы создать новый розыгрыш введите команду /new_give",
                 reply_markup=await main_kb(await redis_check_admin(callback.from_user.id)))
             await state.clear()
 
@@ -208,6 +178,37 @@ async def delete_channel(callback: CallbackQuery, session: AsyncSession):
                                   reply_markup=await main_kb(await redis_check_admin(callback.from_user.id)))
 
 
+@user_router.message(F.text == "Создать пост")
+async def create_post(message: Message, session: AsyncSession):
+    if await is_subscribed(channels=await orm_get_required_channels(session), user_id=message.from_user.id):
+        user_id = message.from_user.id
+        channels = await orm_get_channels_for_admin(session, user_id)
+        if not channels:
+            await message.answer("У тебя нет каналов/групп 🫥",
+                                 reply_markup=await get_callback_btns(btns={"Добавить канал/группу": "add_channel"}))
+            return
+        channels_str = ""
+        btns = {}
+        for channel in channels:
+            chat = await channel_info(channel.channel_id)
+            channels_str += f"{await get_channel_hyperlink(channel.channel_id)}\n"
+            btns[chat.title] = f"create_post_{channel.channel_id}"
+        btns["Добавить канал/группу"] = "add_channel"
+        await message.answer(f"В какой канал делать пост:\n",
+                             reply_markup=await get_callback_btns(btns=btns, sizes=(1,)))
+    else:
+        btns = {}
+        required_channels = await orm_get_required_channels(session)
+        for channel in required_channels:
+            chat = await bot.get_chat(channel.channel_id)
+            chat_invite_link = chat.invite_link
+            btns[chat.title] = f"{chat_invite_link}"
+
+        await message.answer("Для доступа к функции 'Постинг' необходимо быть подписчиком канала(ов) ниже.\n\n"
+                             "После подписки попробуй снова!",
+                             reply_markup=await get_callback_btns(btns=btns, sizes=(1,)))
+
+
 class CreatePost(StatesGroup):
     channel_id = State()
     message = State()
@@ -217,7 +218,8 @@ class CreatePost(StatesGroup):
 # Channel post handlers starts
 @user_router.callback_query(StateFilter(None), F.data.startswith("create_post_"))
 async def make_post(callback: CallbackQuery, state: FSMContext, session: AsyncSession):
-    if await is_subscriber_to_channel(user_id=callback.from_user.id, session=session):
+    required_channels = await orm_get_required_channels(session)
+    if await is_subscribed(channels=required_channels, user_id=callback.from_user.id):
         await state.set_state(CreatePost.channel_id)
         await callback.answer("")
         channel_id = int(callback.data.split("_")[-1])
@@ -306,6 +308,18 @@ async def confirm_post(callback: CallbackQuery, state: FSMContext):
                                       reply_markup=await main_kb(await redis_check_admin(callback.from_user.id)))
 
         await state.clear()
+
+
+@user_router.message(F.text == "Поддержка")
+async def support(message: Message):
+    await message.answer("💬<b>Служба поддержки:</b>\n"
+                         "https://t.me/mrktmng\n\n"
+
+                         "<b>🗒️Инструкция по</b>\n"
+                         "<b>использованию бота:</b>\n"
+                         "https://t.me/WinGiveBot_info\n\n"
+
+                         "Если Вы сделаете все по инструкции,то у Вас все получится!")
 
 # @user_router.message(F.photo)
 # async def get_photo_id(message: Message):

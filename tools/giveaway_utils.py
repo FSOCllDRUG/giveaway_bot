@@ -1,0 +1,185 @@
+import datetime
+
+from aiogram.types import InlineKeyboardMarkup, InlineKeyboardButton
+from sqlalchemy.ext.asyncio import AsyncSession
+
+from create_bot import bot
+from db.pg_models import GiveawayStatus
+from db.pg_orm_query import orm_get_giveaway_by_id
+from db.r_operations import redis_get_participants_count, redis_add_participant
+from keyboards.inline import get_callback_btns
+from tools.texts import encode_giveaway_id
+from tools.utils import channel_info, get_bot_link_to_start, convert_id, get_channel_hyperlink
+
+
+async def get_giveaway_info_text(data: dict) -> str:
+    text = "❗️ Внимательно перепроверьте розыгрыш.</b>\n\n"
+    text += f"Пост розыгрыша в {await get_channel_hyperlink(data['channel_id'])}\n\n"
+    text += f"🏆<b> Количество победителей: {data['winners_count']}</b>\n\n"
+    text += f"🕒 Время публикации: "
+    if "post_datetime" in data:
+        text += f"<b>{datetime.datetime.fromisoformat(data['post_datetime']).strftime('%d.%m.%Y %H:%M')}</b>\n\n"
+    if "end_datetime" in data:
+        text += (f"🕒🔚 Результаты розыгрыша в: "
+                 f"<b>{datetime.datetime.fromisoformat(data['end_datetime']).strftime('%d.%m.%Y %H:%M')}</b>")
+    else:
+        text += f"👥🔚 Результаты розыгрыша когда будет достигнуто <b>{data['end_count']} участника(ов)</b>"
+    return text
+
+
+async def get_giveaway_preview(data: dict, user_id: int = None, bot=None):
+    text = data["text"]
+    text += "\n\n<b>Условия участия:</b>\n\n"
+    if "extra_conditions" in data:
+        text += f'{data["extra_conditions"]}\n\n'
+    if "sponsor_channels" not in data or data["channel_id"] not in data["sponsor_channels"]:
+        channel = await channel_info(data["channel_id"])
+        text += f"✅ Подпишись на <a href='{channel.invite_link}'>{channel.title}</a>\n"
+    if "sponsor_channels" in data:
+        for channel in data["sponsor_channels"]:
+            channel = await channel_info(channel)
+            text += f"✅ Подпишись на <a href='{channel.invite_link}'>{channel.title}</a>\n"
+    if "end_datetime" in data:
+        text += (f"\nРезультаты розыгрыша: <b"
+                 f">{datetime.datetime.fromisoformat(data['end_datetime']).strftime('%d.%m.%Y %H:%M')}</b>\n\n")
+    else:
+        text += f"\nРезультаты розыгрыша будут при достижении <b>{data['end_count']} участника(ов)</b>\n\n"
+    if "media_type" in data:
+        if data["media_type"] == "photo":
+            await bot.send_photo(chat_id=user_id, photo=data["media"], caption=text,
+                                 reply_markup=await get_callback_btns(btns={f"{data['button']}": "empty"}))
+        elif data["media_type"] == "video":
+            await bot.send_video(chat_id=user_id, video=data["media"], caption=text,
+                                 reply_markup=await get_callback_btns(btns={f"{data['button']}": "empty"}))
+        elif data["media_type"] == "animation":
+            await bot.send_animation(chat_id=user_id, animation=data["media"], caption=text,
+                                     reply_markup=await get_callback_btns(btns={f"{data['button']}": "empty"}))
+    else:
+        await bot.send_message(chat_id=user_id, text=text,
+                               reply_markup=await get_callback_btns(btns={f"{data['button']}": "empty"}))
+
+
+async def join_giveaway_link(giveaway_id: int) -> str:
+    link = await get_bot_link_to_start()
+    encoded = await encode_giveaway_id(giveaway_id)
+    link += f"join_giveaway_{encoded}"
+    return link
+
+
+async def post_giveaway(giveaway):
+    text = giveaway.text
+    buttons = {f"{giveaway.button}": f"{await join_giveaway_link(giveaway.id)}"}
+    text += "\n\n<b>Условия участия:</b>\n\n"
+    message = None
+
+    if giveaway.extra_conditions:
+        text += f'{giveaway.extra_conditions}\n\n'
+
+    if not giveaway.sponsor_channel_ids or giveaway.channel_id not in giveaway.sponsor_channel_ids:
+        channel = await channel_info(giveaway.channel_id)
+        text += f"✅ Подпишись на <a href='{channel.invite_link}'>{channel.title}</a>\n"
+
+    if giveaway.sponsor_channel_ids:
+        for channel_id in giveaway.sponsor_channel_ids:
+            channel = await channel_info(channel_id)
+            text += f"✅ Подпишись на <a href='{channel.invite_link}'>{channel.title}</a>\n"
+
+    if giveaway.end_datetime:
+        text += (f"\nРезультаты розыгрыша: <b"
+                 f">{giveaway.end_datetime.strftime('%d.%m.%Y %H:%M')}</b>\n\n")
+    else:
+        text += f"\nРезультаты розыгрыша будут при достижении <b>{giveaway.end_count} участника(ов)</b>\n\n"
+
+    if giveaway.media_type:
+        if giveaway.media_type == "photo":
+            message = await bot.send_photo(chat_id=giveaway.channel_id, photo=giveaway.media, caption=text,
+                                           reply_markup=await get_callback_btns(btns=buttons))
+        elif giveaway.media_type == "video":
+            message = await bot.send_video(chat_id=giveaway.channel_id, video=giveaway.media, caption=text,
+                                           reply_markup=await get_callback_btns(btns=buttons))
+        elif giveaway.media_type == "animation":
+            message = await bot.send_animation(chat_id=giveaway.channel_id, animation=giveaway.media, caption=text,
+                                               reply_markup=await get_callback_btns(btns=buttons))
+    else:
+        message = await bot.send_message(chat_id=giveaway.channel_id, text=text,
+                                         reply_markup=await get_callback_btns(btns=buttons))
+    return message
+
+
+async def giveaway_post_notification(giveaway, post_url):
+    text = (
+        f"Розыгрыш #{giveaway.id} опубликован!\n"
+        f"<a href='{post_url}'>Ссылка на розыгрыш</a>\n"
+    )
+    await bot.send_message(chat_id=giveaway.user_id, text=text)
+
+
+async def giveaway_result_notification(message, giveaway):
+    chat_id = message.chat.id
+    clear_chat_id = await convert_id(chat_id)
+    message_id = message.message_id
+    post_url = f"https://t.me/c/{clear_chat_id}/{message_id}"
+    text = (
+        f"Розыгрыш #{giveaway.id} завершён!\n"
+        f"<a href='{post_url}'>Ссылка на результаты</a>\n"
+    )
+    await bot.send_message(chat_id=giveaway.user_id, text=text)
+
+
+async def update_button_text(session: AsyncSession, giveaway_id: int) -> InlineKeyboardMarkup | None:
+    giveaway = await orm_get_giveaway_by_id(session=session, giveaway_id=giveaway_id)
+    if not giveaway:
+        return None
+    participants_count = await redis_get_participants_count(giveaway_id)
+    button_text = f"{giveaway.button} ({participants_count})"
+    buttons = InlineKeyboardMarkup(inline_keyboard=[
+        [InlineKeyboardButton(text=button_text, url=f"{await join_giveaway_link(giveaway.id)}")]
+    ])
+    return buttons
+
+
+async def update_giveaway_message(session: AsyncSession, giveaway_id: int, chat_id: int, message_id: int):
+    buttons = await update_button_text(session, giveaway_id)
+    if buttons:
+        await bot.edit_message_reply_markup(chat_id=chat_id, message_id=message_id, reply_markup=buttons)
+
+
+async def add_participant_and_update_button(session: AsyncSession, giveaway_id: int, user_id: int, chat_id: int,
+                                            message_id: int):
+    await redis_add_participant(giveaway_id, user_id)
+    await update_giveaway_message(session, giveaway_id, chat_id, message_id)
+
+
+async def check_giveaway_text(session: AsyncSession, giveaway_id: int) -> str:
+    # Получаем данные о розыгрыше
+    giveaway = await orm_get_giveaway_by_id(session=session, giveaway_id=giveaway_id)
+    if giveaway is None:
+        return "Розыгрыш не найден."
+    elif giveaway.status == GiveawayStatus.PUBLISHED or giveaway.status == GiveawayStatus.NOT_PUBLISHED:
+        return "Розыгрыш ещё не завершён."
+    else:
+
+        # Получаем количество участников
+        participant_count = await redis_get_participants_count(giveaway_id)
+
+        # Генерация текста о конкурсе
+        text = (f"Конкурс #{giveaway_id}\n"
+                f"<a href='{giveaway.post_url}'>Ссылка на конкурс</a>\n"
+                f"Кол-во участников: {participant_count}\n"
+                f"Кол-во победителей: {giveaway.winners_count}\n")
+
+        # Проверяем, как завершился конкурс
+        if giveaway.end_count is not None:
+            text += f"Конкурс завершен по кол-ву участников: {giveaway.end_count}\n"
+        elif giveaway.end_datetime is not None:
+            text += f"Конкурс завершён по времени: {giveaway.end_datetime.strftime('%d.%m.%Y %H:%M')}\n"
+        c = 0
+        # Добавляем результаты конкурса
+        text += "\nРезультаты конкурса:\n\nПобедитель:\n"
+        for winner_id in giveaway.winner_ids:
+            c += 1
+            chat = await bot.get_chat(winner_id)
+            user_name = chat.first_name if chat.first_name else "No name"
+            user_username = f"@{chat.username}" if chat.username else ""
+            text += f"{c}.<a href='tg://user?id={winner_id}'>{user_name}</a> ({user_username})\n"
+        return text

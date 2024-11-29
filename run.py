@@ -18,8 +18,8 @@ from tools.giveaway_scheduler import start_scheduler
 async def set_commands():
     commands = [BotCommand(command="start", description="Перезапуск бота"),
                 BotCommand(command="cancel", description="Отменить действие"),
-                BotCommand(command="my_giveaways", description="Мои розыгрыши"),
-                BotCommand(command="new_giveaway", description="Создать розыгрыш"),
+                BotCommand(command="my_gives", description="Мои розыгрыши"),
+                BotCommand(command="new_give", description="Создать розыгрыш"),
                 BotCommand(command="my_channels", description="Мои каналы/группы")]
     await bot.set_my_commands(commands, BotCommandScopeDefault())
 

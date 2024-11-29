@@ -1,3 +1,4 @@
+import asyncio
 import os
 import random
 import string
@@ -6,7 +7,7 @@ from io import BytesIO
 from PIL import Image, ImageDraw, ImageFont
 
 
-def generate_captcha(text_length=4):
+async def generate_captcha(text_length=4):
     # Generates captcha text
     captcha_text = ''.join(random.choices(string.digits, k=text_length))
 
@@ -63,5 +64,7 @@ def generate_captcha(text_length=4):
     byte_io = BytesIO()
     image.save(byte_io, 'PNG')
     byte_io.seek(0)
+
+    await asyncio.sleep(0)  # Yield control to the event loop
 
     return captcha_text, byte_io

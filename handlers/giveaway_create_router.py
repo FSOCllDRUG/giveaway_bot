@@ -19,35 +19,9 @@ from tools.giveaway_utils import get_giveaway_preview, get_channel_hyperlink, \
 from tools.texts import datetime_example, captcha_on_text, captcha_off_text
 from tools.utils import channel_info
 
-# import re
 
 giveaway_create_router = Router()
 giveaway_create_router.message.filter(ChatType("private"))
-
-# @giveaway_router.message(CommandStart(deep_link=True, magic=F.args.regexp(re.compile(r'join_giveaway_(\d+)'))))
-# async def start_join_giveaway(message: Message, command: CommandObject, session: AsyncSession, state: FSMContext):
-#     giveaway_id = int(command.args.split("_")[-1])
-#     user_id = message.from_user.id
-#
-#     sponsor_channels = await orm_get_sponsor_channels(session, giveaway_id)
-#     for channel in sponsor_channels:
-#         if not await redis_is_subscribed(user_id, channel.channel_id):
-#             await message.answer(f"Вы должны подписаться на {channel.channel_id} чтобы участвовать в розыгрыше.")
-#             return
-#
-#     await orm_add_participant(session, user_id, giveaway_id)
-#     await redis_add_participant(giveaway_id, user_id)
-#
-#     participants_count = await redis_get_participants_count(giveaway_id)
-#     max_participants = await orm_get_max_participants(session, giveaway_id)
-#
-#     if max_participants and participants_count >= max_participants:
-#         await orm_end_giveaway(session, giveaway_id)
-#         await message.answer(f"Розыгрыш завершен, так как достигнуто максимальное количество участников.")
-#         return
-#
-#     await message.answer(f"🎉 Теперь вы участник розыгрыша No{giveaway_id}")
-#     await state.clear()
 
 user_locks = defaultdict(asyncio.Lock)
 
@@ -68,7 +42,7 @@ class CreateGiveaway(StatesGroup):
     media_group_id = State()  # To avoid sending warning about "only one media" more than once
 
 
-@giveaway_create_router.message(Command("new_giveaway"))
+@giveaway_create_router.message(Command("new_give"))
 @giveaway_create_router.message(F.text == "Создать розыгрыш")
 async def create_giveaway(message: Message, state: FSMContext, session: AsyncSession):
     if not await orm_get_channels_for_admin(session=session, admin_user_id=message.from_user.id):
@@ -469,8 +443,7 @@ async def create_giveaway_end_datetime(message: Message, state: FSMContext):
         await state.update_data(end_datetime=user_datetime.isoformat())
         await message.answer("✅ Время проведения\n"
                              "результатов сохранено!")
-        await message.answer("Превью поста розыгрыша\n"
-                             "⬇️⬇️⬇️⬇️⬇️⬇️⬇️⬇️⬇️")
+        await message.answer("❗️<b>Превью розыгрыша:</b>")
         data = await state.get_data()
         await get_giveaway_preview(data=data, user_id=message.from_user.id, bot=bot)
         await message.answer(text=await get_giveaway_info_text(data),
@@ -529,7 +502,7 @@ async def create_giveaway_captcha(callback, state, session):
     await orm_create_giveaway(session=session, data=data, user_id=user_id)
     await state.clear()
     await callback.message.answer("✅ Розыгрыш сохранен и готовится к публикации!\n\n"
-                                  "Для просмотра розыгрышей отправьте /my_giveaways\n\n"
+                                  "Для просмотра розыгрышей отправьте /my_gives\n\n"
                                   "Для вызова меню напишите /start")
 # @giveaway_router.message()
 # async def create_giveaway_default(message: Message):

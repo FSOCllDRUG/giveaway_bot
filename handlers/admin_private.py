@@ -16,7 +16,8 @@ from filters.is_admin import IsAdmin
 from keyboards.inline import get_callback_btns
 from keyboards.reply import get_keyboard, admin_kb
 from tools.mailing import simple_mailing
-from tools.utils import cbk_msg, msg_to_cbk, channel_info
+from tools.texts import cbk_msg
+from tools.utils import msg_to_cbk, channel_info
 
 admin_private_router = Router()
 admin_private_router.message.filter(ChatType("private"), IsAdmin())
@@ -289,7 +290,7 @@ async def change_required_status(callback: CallbackQuery, session: AsyncSession)
     else:
         required = True
     await orm_change_required_channel(session, channel_id, required)
-    text = f"Канал {channel.title} установлен {'' if status else 'не'}обязательным для " \
+    text = f"Канал {channel.title} установлен {'' if required else 'не'}обязательным для " \
            f"постинга"
     await callback.message.answer(text=text,
                                   reply_markup=await admin_kb()

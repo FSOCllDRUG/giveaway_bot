@@ -10,8 +10,9 @@ from db.pg_models import GiveawayStatus
 from db.pg_orm_query import orm_get_giveaway_by_id, orm_get_due_giveaways, \
     orm_update_giveaway_status, orm_update_giveaway_post_data, orm_add_winners, orm_update_participants_count
 from db.r_operations import redis_create_giveaway, redis_get_participants, redis_expire_giveaway
-from tools.utils import post_giveaway, convert_id, giveaway_post_notification, is_subscribed, \
-    giveaway_result_notification, encode_giveaway_id, get_bot_link_to_start
+from tools.giveaway_utils import post_giveaway, giveaway_post_notification, giveaway_result_notification
+from tools.texts import encode_giveaway_id
+from tools.utils import convert_id, is_subscribed, get_bot_link_to_start
 
 session = session_maker()
 

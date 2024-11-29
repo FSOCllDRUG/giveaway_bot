@@ -45,7 +45,7 @@ async def main_kb(admin: bool):
         [KeyboardButton(text="Создать розыгрыш"),
          KeyboardButton(text="Мои розыгрыши")],
         [KeyboardButton(text="Мои каналы/чаты")],
-         # KeyboardButton(text="Создать пост")],
+        [KeyboardButton(text="Создать пост")],
         [KeyboardButton(text="Поддержка")],
     ]
     if admin:
