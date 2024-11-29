@@ -89,3 +89,42 @@ async def get_active_users_count(days: int):
                 active_users += 1
 
     return active_users
+
+
+# Функция, которая создаёт словарь giveaway_id: список_айди_участников
+async def redis_create_giveaway(giveaway_id: int):
+    await redis_conn.set(f"giveaway:{giveaway_id}", json.dumps([]))
+
+
+# Функция, которая добавляет к этому словарю айди участника
+async def redis_add_participant(giveaway_id: int, user_id: int):
+    participants = await redis_conn.get(f"giveaway:{giveaway_id}")
+    if participants is None:
+        participants = []
+    else:
+        participants = json.loads(participants)
+
+    if user_id not in participants:
+        participants.append(user_id)
+        await redis_conn.set(f"giveaway:{giveaway_id}", json.dumps(participants))
+
+
+# Функция, которая получает количество участников
+async def redis_get_participants_count(giveaway_id: int):
+    participants = await redis_conn.get(f"giveaway:{giveaway_id}")
+    if participants is None:
+        return 0
+    participants = json.loads(participants)
+    return len(participants)
+
+
+# Функция, которая получает список участников
+async def redis_get_participants(giveaway_id: int):
+    participants = await redis_conn.get(f"giveaway:{giveaway_id}")
+    if participants is None:
+        return None
+    return json.loads(participants)
+
+
+async def redis_expire_giveaway(giveaway_id: int):
+    await redis_conn.expire(f"giveaway:{giveaway_id}", timedelta(weeks=1))

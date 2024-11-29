@@ -1,7 +1,10 @@
+from datetime import datetime
+from typing import List, Optional
+
 from sqlalchemy import select, func, update, insert, delete
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from db.pg_models import User, Channel, user_channel_association
+from db.pg_models import User, Channel, user_channel_association, Giveaway, GiveawayStatus
 
 
 async def orm_user_start(session: AsyncSession, data: dict):
@@ -128,7 +131,6 @@ async def orm_get_admins_id(session: AsyncSession):
 
 async def orm_add_admin(session: AsyncSession, user_id: int):
     query = update(User).where(User.user_id == user_id).values(is_admin=True)
-    print(query)
     await session.execute(query)
     await session.commit()
     await session.close()
@@ -167,3 +169,197 @@ async def orm_is_required_channel(session: AsyncSession, channel_id: int) -> boo
     result = await session.execute(query)
     await session.close()
     return result.scalar()
+
+
+async def orm_create_giveaway(session, data, user_id):
+    try:
+        end_datetime_str = data.get('end_datetime')
+        if isinstance(end_datetime_str, str):
+            end_datetime = datetime.fromisoformat(end_datetime_str)
+        else:
+            end_datetime = None
+
+        post_datetime_str = data.get('post_datetime')
+        post_datetime = datetime.fromisoformat(post_datetime_str)
+
+        new_giveaway = Giveaway(
+            media_type=data.get('media_type'),
+            media=data.get('media'),
+            text=data.get('text'),
+            button=data.get('button'),
+            winners_count=data.get('winners_count'),
+            channel_id=data.get('channel_id'),
+            post_datetime=post_datetime,
+            end_datetime=end_datetime,
+            end_count=data.get('end_count'),
+            captcha=data.get('captcha', False),
+            extra_conditions=data.get('extra_conditions'),
+            sponsor_channel_ids=data.get('sponsor_channels', []),
+            post_url=data.get('post_url'),
+            participants_count=data.get('participants_count', 0),
+            winner_ids=data.get('winner_ids', []),
+            status='NOT_PUBLISHED',
+            user_id=user_id
+        )
+        session.add(new_giveaway)
+        await session.commit()
+    except Exception as e:
+        print(f"Error creating giveaway: {e}")
+        await session.rollback()
+
+
+async def orm_get_user_giveaways(session: AsyncSession, user_id: int):
+    result = await session.execute(
+        select(Giveaway.id, Giveaway.text, Giveaway.status)
+        .where(Giveaway.user_id == user_id)
+        .order_by(Giveaway.id.desc())
+    )
+    giveaways = result.fetchall()
+    await session.close()
+    return [(row.id, row.text[:35], row.status) for row in giveaways]
+
+
+async def orm_delete_giveaway(session: AsyncSession, giveaway_id: int, user_id: int):
+    result = await session.execute(
+        select(Giveaway).where(Giveaway.id == giveaway_id)
+    )
+    giveaway = result.scalar_one_or_none()
+    if giveaway and giveaway.user_id == user_id:
+        await session.delete(giveaway)
+        await session.commit()
+        await session.close()
+        return True
+    await session.close()
+    return False
+
+
+async def orm_update_giveaway_end_conditions(session: AsyncSession, giveaway_id: int,
+                                             end_datetime: Optional[str], end_count: Optional[int]):
+    result = await session.execute(
+        select(Giveaway).where(Giveaway.id == giveaway_id)
+    )
+    giveaway = result.scalar_one_or_none()
+    if giveaway:
+        if end_datetime:
+            end_time_str = end_datetime
+            end_time = datetime.fromisoformat(end_time_str)
+            giveaway.end_datetime = end_time
+            giveaway.end_count = None
+        elif end_count:
+            giveaway.end_count = end_count
+            giveaway.end_datetime = None
+        await session.commit()
+        await session.close()
+        return True
+    await session.close()
+    return False
+
+
+async def orm_get_giveaway_by_id(session: AsyncSession, giveaway_id: int):
+    result = await session.execute(
+        select(Giveaway).where(Giveaway.id == giveaway_id)
+    )
+    giveaway = result.scalar_one_or_none()
+    await session.close()
+    return giveaway
+
+
+async def orm_add_winners(session: AsyncSession, giveaway_id: int, new_winners: list[int]):
+    result = await session.execute(
+        select(Giveaway).where(Giveaway.id == giveaway_id)
+    )
+    giveaway = result.scalar_one_or_none()
+    if giveaway:
+        # Объединяем текущий список победителей с новыми победителями
+        current_winners = giveaway.winner_ids or []
+        updated_winners = current_winners + new_winners
+
+        # Обновляем запись в базе данных
+        await session.execute(
+            update(Giveaway).where(Giveaway.id == giveaway_id).values(winner_ids=updated_winners)
+        )
+        await session.commit()
+        await session.close()
+        return True
+    await session.close()
+    return False
+
+
+
+
+
+# Needed for joining mechanism
+async def orm_get_join_giveaway_data(session: AsyncSession, giveaway_id: int):
+    result = await session.execute(
+        select(Giveaway.sponsor_channel_ids, Giveaway.captcha, Giveaway.status, Giveaway.end_count)
+        .where(Giveaway.id == giveaway_id)
+    )
+    giveaway = result.one_or_none()
+    await session.close()
+    if giveaway:
+        sponsor_channel_ids, captcha, status, end_count = giveaway
+        if status == GiveawayStatus.PUBLISHED:
+            return sponsor_channel_ids, captcha, end_count
+    return None, None, None
+
+
+async def orm_get_due_giveaways(session: AsyncSession, current_time: datetime):
+    result = await session.execute(
+        select(Giveaway).where(
+            (Giveaway.post_datetime <= current_time) |
+            (Giveaway.end_datetime <= current_time) |
+            (Giveaway.end_count.is_not(None))
+        )
+    )
+    giveaways = result.scalars().all()
+    await session.close()
+
+    not_published = [giveaway for giveaway in giveaways if giveaway.status == GiveawayStatus.NOT_PUBLISHED]
+    ready_for_results = [giveaway for giveaway in giveaways if giveaway.status == GiveawayStatus.PUBLISHED]
+
+    return not_published, ready_for_results
+
+
+async def orm_update_giveaway_status(session: AsyncSession, giveaway_id: int, status: GiveawayStatus):
+    result = await session.execute(
+        select(Giveaway).where(Giveaway.id == giveaway_id)
+    )
+    giveaway = result.scalar_one_or_none()
+    if giveaway:
+        giveaway.status = status
+        await session.commit()
+        await session.close()
+        return True
+    await session.close()
+    return False
+
+
+async def orm_update_giveaway_post_data(session: AsyncSession, giveaway_id: int, post_url: str, message_id: int):
+    result = await session.execute(
+        select(Giveaway).where(Giveaway.id == giveaway_id)
+    )
+    giveaway = result.scalar_one_or_none()
+    if giveaway:
+        giveaway.post_url = post_url
+        giveaway.message_id = message_id
+        await session.commit()
+        await session.close()
+        return True
+    await session.close()
+    return False
+
+
+async def orm_get_giveaway_end_count(session: AsyncSession, giveaway_id: int) -> Optional[int]:
+    result = await session.execute(
+        select(Giveaway.end_count).where(Giveaway.id == giveaway_id)
+    )
+    end_count = int(result.scalar_one_or_none())
+    await session.close()
+    return end_count
+
+
+async def orm_update_participants_count(session: AsyncSession, giveaway_id: int, participants_count: int):
+    await session.execute(
+        update(Giveaway).where(Giveaway.id == giveaway_id).values(participants_count=participants_count)
+    )
+    await session.commit()

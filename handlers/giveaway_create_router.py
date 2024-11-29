@@ -13,14 +13,11 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from create_bot import bot
 from db.pg_orm_query import orm_get_channels_for_admin, orm_create_giveaway
 from filters.chat_type import ChatType
-# from db.pg_orm_query import (
-#     orm_add_participant, orm_get_sponsor_channels, orm_end_giveaway, orm_get_max_participants,
-#     orm_get_channels_for_admin
-# )
-# from db.r_operations import redis_add_participant, redis_get_participants_count, redis_is_subscribed
 from keyboards.inline import get_callback_btns, captcha_toggle
-from tools.utils import channel_info, datetime_example, get_giveaway_preview, get_channel_hyperlink, \
-    get_giveaway_info_text, captcha_on_text, captcha_off_text
+from tools.giveaway_utils import get_giveaway_preview, get_channel_hyperlink, \
+    get_giveaway_info_text
+from tools.texts import datetime_example, captcha_on_text, captcha_off_text
+from tools.utils import channel_info
 
 # import re
 
@@ -471,7 +468,7 @@ async def create_giveaway_end_datetime(message: Message, state: FSMContext):
 
         await state.update_data(end_datetime=user_datetime.isoformat())
         await message.answer("✅ Время проведения\n"
-                            "результатов сохранено!")
+                             "результатов сохранено!")
         await message.answer("Превью поста розыгрыша\n"
                              "⬇️⬇️⬇️⬇️⬇️⬇️⬇️⬇️⬇️")
         data = await state.get_data()
