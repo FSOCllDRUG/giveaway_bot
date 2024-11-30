@@ -30,7 +30,7 @@ async def start_bot():
     admins = env_admins
     try:
         for admin_id in admins:
-            await bot.send_message(admin_id, f"Бот запущен🥳.{admins}")
+            await bot.send_message(admin_id, f"Бот запущен🥳.")
     except:
         pass
 
