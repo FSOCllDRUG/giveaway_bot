@@ -31,14 +31,15 @@ user_router.message.filter(ChatType("private"))
 @user_router.message(StateFilter("*"), F.text.casefold() == "отмена")
 async def cancel_fsm(message: Message, state: FSMContext):
     await state.clear()
-    await message.answer("Действие отменено", reply_markup=await main_kb(await redis_check_admin(message.from_user.id)))
+    await message.answer("❌ Действие отменено.",
+                         reply_markup=await main_kb(await redis_check_admin(message.from_user.id)))
 
 
 @user_router.callback_query(StateFilter("*"), F.data == "cancel")
 async def cancel_fsm(callback: CallbackQuery, state: FSMContext):
     await state.clear()
     await callback.answer("")
-    await callback.message.answer("Действие отменено",
+    await callback.message.answer("❌ Действие отменено.",
                                   reply_markup=await main_kb(await redis_check_admin(callback.from_user.id)))
 
 
@@ -274,8 +275,9 @@ async def btns_to_data(message: Message, state: FSMContext):
     await bot.copy_message(chat_id=message.from_user.id, from_chat_id=message.chat.id, message_id=data[
         "message"],
                            reply_markup=await get_callback_btns(btns=data["buttons"]))
-    await message.answer("Приступим к постингу?", reply_markup=await get_callback_btns(btns={"Да": "confirm_post",
-                                                                                             "Переделать": "cancel_post"}))
+    await message.answer("Приступим к постингу?",
+                         reply_markup=await get_callback_btns(btns={"Да": "confirm_post",
+                                                                    "Переделать": "cancel_post"}))
 
 
 @user_router.callback_query(StateFilter(CreatePost.message), F.data == "cancel_post")
@@ -320,6 +322,13 @@ async def support(message: Message):
                          "https://t.me/WinGiveBot_info\n\n"
 
                          "Если Вы сделаете все по инструкции,то у Вас все получится!")
+
+
+@user_router.message(Command("developer"))
+async def developer(message: Message):
+    await message.answer(f"Контакты разработчика:\n"
+                         f"Telegram: <b><i><u><a href='tg://user?id=6092344340'>*НАПИСАТЬ*</a></u></i></b>\n"
+                         f"Email: fsoclldrug@gmail.com")
 
 # @user_router.message(F.photo)
 # async def get_photo_id(message: Message):

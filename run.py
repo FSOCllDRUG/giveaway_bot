@@ -20,7 +20,8 @@ async def set_commands():
                 BotCommand(command="cancel", description="Отменить действие"),
                 BotCommand(command="my_gives", description="Мои розыгрыши"),
                 BotCommand(command="new_give", description="Создать розыгрыш"),
-                BotCommand(command="my_channels", description="Мои каналы/группы")]
+                BotCommand(command="my_channels", description="Мои каналы/группы"),
+                BotCommand(command="developer", description="Контакт разработчика"),]
     await bot.set_my_commands(commands, BotCommandScopeDefault())
 
 

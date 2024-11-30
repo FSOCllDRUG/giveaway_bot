@@ -53,7 +53,7 @@ async def get_profile(message: Message, session: AsyncSession):
 @admin_private_router.message(StateFilter("*"), F.text.casefold() == "отмена")
 async def cancel_fsm(message: Message, state: FSMContext) -> None:
     await state.clear()
-    await message.answer("Действие отменено", reply_markup=await admin_kb())
+    await message.answer("❌ Действие отменено.", reply_markup=await admin_kb())
 
 
 class Mailing(StatesGroup):
@@ -142,123 +142,6 @@ async def confirm_mailing(callback: CallbackQuery, state: FSMContext, session: A
 # Mailing handlers ends
 
 
-# @admin_private_router.message(F.text == "Список админов", IsOwner())
-# async def add_admin_to_bot(message: Message, session: AsyncSession):
-#     text: str = "Владелец бота:\n"
-#     owner: int = env_admins[1]
-#     id_for_query = int(owner)
-#     user = await orm_get_user_data(session, id_for_query)
-#     user_link = f"<a href='tg://user?id={user.user_id}'>{user.user_id}</a>"
-#     text += (
-#         f"👤 Телеграм ID: {user_link}\n"
-#         f"📝 Полное имя: {user.name}\n"
-#     )
-#
-#     if user.username is not None:
-#         text += f"🔑 Логин: @{user.username}\n"
-#
-#     if message.from_user.id in env_admins:
-#         text += await admins_list_text(session)
-#         admins = await orm_get_admins(session)
-#         for admin in admins:
-#             channels = await orm_get_channels_for_admin(session, admin.user_id)
-#             if channels:
-#                 channels_str = ""
-#                 for channel in channels:
-#                     chat = await bot.get_chat(channel.channel_id)
-#                     channels_str += f"<a href='{chat.invite_link}'>{chat.title}</a>\n"
-#                 text += f"Каналы:\n{channels_str}"
-#             else:
-#                 text += "Не подключен к каналам\n"
-#     await message.answer(text=text,
-#                          reply_markup=await get_callback_btns(btns={"Добавить админа": "add_admin",
-#                                                               "Удалить админа": "del_admin",
-#                                                               "Стукнуть разраба": link_to_dev},
-#                                                         sizes=(1,)))
-
-
-# @admin_private_router.callback_query(F.data == "del_admin")
-# async def del_admin(callback: CallbackQuery, session: AsyncSession):
-#     await callback.answer("")
-#     admins = await orm_get_admins(session)
-#     btns = {}
-#     for admin in admins:
-#         btns[f"{admin.name} ({admin.user_id})"] = f"delete_admin_{admin.user_id}"
-#     await callback.message.answer("Добавленные администраторы:",
-#                                   reply_markup=await get_callback_btns(btns=btns, sizes=(1,)))
-
-
-# @admin_private_router.callback_query(F.data.startswith("delete_admin_"))
-# async def delete_admin(callback: CallbackQuery, session: AsyncSession):
-#     admin_id = int(callback.data.split("_")[-1])
-#     await orm_delete_admin(session, admin_id)
-#     await update_admins(session, env_admins)
-#     admins = await orm_get_admins(session)
-#     btns = {}
-#     for admin in admins:
-#         btns[f"{admin.name} ({admin.user_id})"] = f"delete_admin_{admin.user_id}"
-#     await callback.message.edit_text("Администратор успешно удалён!")
-
-
-# class AddAdmin(StatesGroup):
-#     user_id = State()
-#     confirm = State()
-
-
-# @admin_private_router.callback_query(F.data == "add_admin")
-# async def add_admin(callback: CallbackQuery, state: FSMContext):
-#     await callback.answer("")
-#     await state.set_state(AddAdmin.user_id)
-#     await callback.message.answer("Перешли сообщение от юзера, которого хочешь сделать админом\n\n"
-#                                   "‼️<b><u>ВАЖНО</u></b>‼️\n"
-#                                   "Это должен быть пользователь, который взаимодействовал с ботом",
-#                                   reply_markup=get_keyboard("Отмена"))
-
-
-# @admin_private_router.message(AddAdmin.user_id)
-# async def get_admin_id(message: Message, state: FSMContext, session: AsyncSession):
-#     try:
-#         text = "Ты хочешь сделать администратором пользователя:\n\n"
-#         user_id = await get_chat_id(message)
-#         await state.update_data(user_id=user_id)
-#         user = await orm_get_user_data(session, user_id)
-#         if user is None:
-#             await message.answer("Пользователь ещё не запускал бота!")
-#             return
-#         elif await redis_check_admin(user_id):
-#             await message.answer("Пользователь уже админ!\n"
-#                                  "Возвращаю тебя в админ панель", reply_markup=admin_kb())
-#             await state.clear()
-#             return
-#         user_link = f"<a href='tg://user?id={user.user_id}'>{user.user_id}</a>"
-#         text += (
-#             f"👤 Телеграм ID: {user_link}\n"
-#             f"📝 Полное имя: {user.name}\n"
-#         )
-#
-#         if user.username is not None:
-#             text += f"🔑 Логин: @{user.username}\n"
-#         await message.answer(text=text,
-#                              reply_markup=await get_callback_btns(btns={"Подтвердить":
-#                                                                       "confirm"}))
-#         await state.set_state(AddAdmin.confirm)
-#     except ValueError:
-#         await message.answer("Некорректный ID админа, попробуй снова!")
-
-
-# @admin_private_router.callback_query(F.data == "confirm", StateFilter(AddAdmin.confirm))
-# async def add_admin_done(callback: CallbackQuery, state: FSMContext, session: AsyncSession):
-#     await callback.answer("")
-#     data = await state.get_data()
-#     admin_id = data.get("user_id")
-#     await orm_add_admin(session, admin_id)
-#     text = "Администратор добавлен в базу данных!"
-#     text += await admins_list_text(session)
-#     await callback.message.answer(text=text, reply_markup=admin_kb())
-#     await update_admins(session, env_admins)
-#     await state.clear()
-
-
 @admin_private_router.callback_query(F.data.startswith("required_status_"))
 async def change_required_status(callback: CallbackQuery, session: AsyncSession):
     await callback.answer("")
@@ -296,36 +179,3 @@ async def change_required_status(callback: CallbackQuery, session: AsyncSession)
                                   reply_markup=await admin_kb()
                                   )
 
-# class AddAdminChannel(StatesGroup):
-#     channel_id = State()
-#     confirm = State()
-#
-#
-# @admin_private_router.callback_query(F.data.startswith("add_admin_to_channel_"))
-# async def add_admin_to_channel(callback: CallbackQuery, state: FSMContext, session: AsyncSession):
-#     channel_id = int(callback.data.split("_")[-1])
-#     await callback.answer("")
-#     await state.update_data(channel_id=channel_id)
-#     admins = await orm_get_admins(session)
-#     channel_admins = await orm_get_admins_in_channel(session, channel_id)
-#     channel_admins_ids = [admin.user_id for admin in channel_admins]
-#     available_admins = [admin for admin in admins if admin.user_id not in channel_admins_ids]
-#     if not available_admins:
-#         await callback.message.answer("Нет доступных администраторов для добавления в канал.")
-#         return
-#     btns = {}
-#     for admin in available_admins:
-#         btns[f"{admin.name} ({admin.user_id})"] = f"add_admin_{admin.user_id}"
-#     await callback.message.answer("Выберите админа, которого вы хотите добавить к выбранному каналу из списка:",
-#                                   reply_markup=await get_callback_btns(btns=btns, sizes=(1,)))
-#     await state.set_state(AddAdminChannel.confirm)
-#
-#
-# @admin_private_router.callback_query(F.data.startswith("add_admin_"), StateFilter(AddAdminChannel.confirm))
-# async def confirm_add_admin_to_channel(callback: CallbackQuery, state: FSMContext, session: AsyncSession):
-#     admin_id = int(callback.data.split("_")[-1])
-#     data = await state.get_data()
-#     channel_id = data.get("channel_id")
-#     await orm_add_admin_to_channel(session, admin_id, channel_id)
-#     await callback.message.answer("Администратор добавлен в канал!")
-#     await state.clear()
