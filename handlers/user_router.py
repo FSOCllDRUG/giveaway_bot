@@ -48,10 +48,11 @@ async def cancel_fsm(callback: CallbackQuery, state: FSMContext):
 async def cmd_start(message: Message, session: AsyncSession, state: FSMContext):
     await state.clear()
     text = ("Добро пожаловать в <b>WinGiveBot</b>!\n\n"
-            "Бот способен организовывать розыгрыши для участников одного или нескольких telegram-каналов "
-            "и автоматически определять победителей в установленное время. "
-            "Также в Нашем боте присутствует капча для защиты от накрутки ботов."
-            "И самое интересное,у нас есть функция создания постов с кнопкой!")
+            "Бот способен организовывать розыгрыши для участников одного или нескольких <b>telegram-каналов</b> и "
+            "автоматически определять победителей в установленное время.\n\n"
+            "❗️Также в Нашем боте присутствует <b>капча</b> для защиты от накрутки ботов.\n"
+            "И самое интересное, у нас есть функция создания постов с кнопкой!"
+            )
     if await orm_get_user_data(session, user_id=message.from_user.id) is not None:
         await message.answer(text,
                              reply_markup=await main_kb(await redis_check_admin(message.from_user.id)))
@@ -68,7 +69,8 @@ async def cmd_start(message: Message, session: AsyncSession, state: FSMContext):
 
 @user_router.message(F.text == "Главное меню")
 async def main_menu(message: Message):
-    await message.answer("Ты в главном меню", reply_markup=await main_kb(await redis_check_admin(message.from_user.id)))
+    await message.answer("<b>Вы в главном меню!</b>", reply_markup=await main_kb(await redis_check_admin(
+        message.from_user.id)))
 
 
 @user_router.message(Command("my_channels"))
@@ -87,7 +89,7 @@ async def get_user_channels(message: Message, session: AsyncSession):
         channels_str += f"{await get_channel_hyperlink(channel.channel_id)}\n"
         btns[chat.title] = f"channel_{channel.channel_id}"
     btns["Добавить канал/группу"] = "add_channel"
-    await message.answer(f"Твои каналы:\n{channels_str}",
+    await message.answer(f"❗️<b>Ваши каналы:</b>\n{channels_str}",
                          reply_markup=await get_callback_btns(btns=btns, sizes=(1,)))
 
 
@@ -101,12 +103,13 @@ class AddChannel(StatesGroup):
 async def start_add_channel(callback: CallbackQuery, state: FSMContext):
     await state.update_data(admin_id=callback.from_user.id)
     await callback.answer("")
-    await callback.message.answer("Добавь меня в <b>свой</b> канал с <b><i><u>правами администратора</u></i></b>\n\n"
+    await callback.message.answer("Добавь меня в <b>свой</b> канал\n"
+                                  "в роли администратора!\n\n"
                                   "Необходимые права для работы бота:\n"
                                   "\n✅ Отправка сообщений"
                                   "\n✅ Удаление сообщений"
                                   "\n✅ Редактирование сообщений\n\n"
-                                  "После того как добавишь меня в канал, нажми на кнопку⬇️",
+                                  "<b>После того как добавишь меня в канал, нажми на кнопку</b>⬇️",
                                   reply_markup=await get_callback_btns(btns={"Я добавил бота!": "added_to_channel"}))
     await state.set_state(AddChannel.channel_id)
 
@@ -138,9 +141,9 @@ async def check_channel(callback: CallbackQuery, session: AsyncSession, state: F
         if check:
             await orm_add_channel(session, channel_id)
             await orm_add_admin_to_channel(session, user_id, channel_id)
-            channel = await get_channel_hyperlink(channel_id)
             await callback.message.answer(
-                f"✅Канал/группа {channel} добавлен(а) успешно!\n\n"
+                "✅ <b>Канал/группа</b>\n"
+                "<b>добавлен(а) успешно!</b>\n\n"
                 "Чтобы создать новый розыгрыш введите команду /new_give",
                 reply_markup=await main_kb(await redis_check_admin(callback.from_user.id)))
             await state.clear()
@@ -152,7 +155,7 @@ async def check_channel(callback: CallbackQuery, session: AsyncSession, state: F
 
 
 @user_router.callback_query(F.data.startswith("channel_"))
-async def channel_choosen(callback: CallbackQuery):
+async def channel_chosen(callback: CallbackQuery):
     channel_id = int(callback.data.split("_")[-1])
     channel = await channel_info(channel_id)
     btns = {
@@ -175,7 +178,7 @@ async def delete_channel(callback: CallbackQuery, session: AsyncSession):
     await callback.answer("")
     channel_id = int(callback.data.split("_")[-1])
     await orm_delete_channel(session, channel_id)
-    await callback.message.answer("Канал удален успешно!",
+    await callback.message.answer("✅ <b>Канал успешно удален!</b>",
                                   reply_markup=await main_kb(await redis_check_admin(callback.from_user.id)))
 
 
@@ -195,7 +198,8 @@ async def create_post(message: Message, session: AsyncSession):
             channels_str += f"{await get_channel_hyperlink(channel.channel_id)}\n"
             btns[chat.title] = f"create_post_{channel.channel_id}"
         btns["Добавить канал/группу"] = "add_channel"
-        await message.answer(f"В какой канал делать пост:\n",
+        await message.answer("<b>В какой канал делаем пост?</b>\n"
+                             "📊Ваши каналы:",
                              reply_markup=await get_callback_btns(btns=btns, sizes=(1,)))
     else:
         btns = {}
@@ -205,8 +209,9 @@ async def create_post(message: Message, session: AsyncSession):
             chat_invite_link = chat.invite_link
             btns[chat.title] = f"{chat_invite_link}"
 
-        await message.answer("Для доступа к функции 'Постинг' необходимо быть подписчиком канала(ов) ниже.\n\n"
-                             "После подписки попробуй снова!",
+        await message.answer("Для доступа к функции <b>«posting»</b> необходимо быть подписчиком канала(ов) ниже.\n\n"
+                             "❗️<b>После подписки нажмите</b>\n"
+                             "<b>снова на кнопку «Создать пост»</b>",
                              reply_markup=await get_callback_btns(btns=btns, sizes=(1,)))
 
 
@@ -226,9 +231,11 @@ async def make_post(callback: CallbackQuery, state: FSMContext, session: AsyncSe
         channel_id = int(callback.data.split("_")[-1])
         await state.update_data(channel_id=channel_id)
         await callback.message.answer("Отправь сообщение, которое будем постить\n\n"
-                                      "<b>ВАЖНО</b>\n\n"
-                                      "В посте может быть приложен только <u>один</u> файл*!\n"
-                                      "<i>Файл— фото/видео/документ/голосовое сообщение/видео сообщение</i>",
+                                      "<b>❗️ВАЖНО.</b>\n\n"
+                                      "В посте может быть\n"
+                                      "приложен только <b><u>один</u></b> файл!\n\n"
+                                      "<i>Файл - фото/видео/документ</i>\n"
+                                      "<i>Фголосовое сообщение/видео сообщение!</i>",
                                       reply_markup=get_keyboard("Отмена",
                                                                 placeholder="Отправь сообщение, для поста"
                                                                 )
@@ -243,9 +250,11 @@ async def make_post(callback: CallbackQuery, state: FSMContext, session: AsyncSe
             chat_invite_link = chat.invite_link
             btns[chat.title] = f"{chat_invite_link}"
 
-        await callback.message.answer("Для доступа к функции 'Постинг' необходимо быть подписчиком канала(ов) ниже.\n\n"
-                                      "После подписки попробуй снова!",
-                                      reply_markup=await get_callback_btns(btns=btns, sizes=(1,)))
+        await callback.message.answer(
+            "Для доступа к функции <b>«posting»</b> необходимо быть подписчиком канала(ов) ниже.\n\n"
+            "❗️<b>После подписки нажмите</b>\n"
+            "<b>снова на кнопку «Создать пост»</b>",
+            reply_markup=await get_callback_btns(btns=btns, sizes=(1,)))
         await state.clear()
 
 
@@ -270,8 +279,7 @@ async def add_btns_post(callback: CallbackQuery):
 async def btns_to_data(message: Message, state: FSMContext):
     await state.update_data(buttons=await msg_to_cbk(message))
     data = await state.get_data()
-    await message.answer(f"Вот как будет выглядеть пост в канале:"
-                         f"\n⬇️")
+    await message.answer(f"Вот как будет выглядеть пост в канале:")
     await bot.copy_message(chat_id=message.from_user.id, from_chat_id=message.chat.id, message_id=data[
         "message"],
                            reply_markup=await get_callback_btns(btns=data["buttons"]))
@@ -304,7 +312,7 @@ async def confirm_post(callback: CallbackQuery, state: FSMContext):
                                              message_id=data["message"],
                                              reply_markup=await get_callback_btns(btns=data["buttons"]))
 
-        await callback.message.answer("Пост успешно создан!\n"
+        await callback.message.answer("✅ <b>Пост успешно создан!</b>\n"
                                       f"Ссылка на пост: https://t.me/c/{await convert_id(data['channel_id'])}"
                                       f"/{post_id.message_id}",
                                       reply_markup=await main_kb(await redis_check_admin(callback.from_user.id)))

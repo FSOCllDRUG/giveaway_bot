@@ -28,9 +28,9 @@ giveaway_interaction_router = Router()
 giveaway_interaction_router.message.filter(ChatType("private"))
 
 status_mapping = {
-    GiveawayStatus.NOT_PUBLISHED: "Ждёт публикации",
-    GiveawayStatus.PUBLISHED: "Опубликован",
-    GiveawayStatus.FINISHED: "Завершён"
+    GiveawayStatus.NOT_PUBLISHED: "⏳ Ждёт публикации",
+    GiveawayStatus.PUBLISHED: "✅ Опубликован",
+    GiveawayStatus.FINISHED: "❌ Завершён"
 }
 
 
@@ -73,7 +73,7 @@ async def start_join_giveaway(message: Message, command: CommandObject, session:
         input_file = BufferedInputFile(captcha_image.getvalue(), filename=f"captcha{user_id}.png")
         await message.answer_photo(photo=input_file, caption="❓Какие числа Вы видите на картинке? Отправьте боту "
                                                              "ответ!\n\n"
-                                                           "<b>Для отказа от участия в розыгрыше нажмите</b> /cancel")
+                                                             "<b>Для отказа от участия в розыгрыше нажмите</b> /cancel")
         await state.set_state(Captcha.awaiting_captcha)
         await state.update_data(giveaway_id=giveaway_id, chat_id=message.chat.id, message_id=message.message_id)
     else:
@@ -140,10 +140,23 @@ async def check_captcha(message: Message, state: FSMContext, session: AsyncSessi
 @giveaway_interaction_router.message(Command("my_gives"))
 async def my_gives(message: Message, session: AsyncSession):
     my_givs = await format_giveaways(await orm_get_user_giveaways(session=session, user_id=message.from_user.id))
-    text = "🎁Ваши розыгрыши:\n\n"
+    initial_text = "🎁<b>Ваши розыгрыши!</b>\n\n"
+    text = initial_text
+    messages = []
+    limit = 4096
+
     for giv in my_givs:
-        text += f"{giv}\n"
-    await message.answer(text)
+        giv_text = f"{giv}\n"
+        if len(text) + len(giv_text) > limit:
+            messages.append(text)
+            text = initial_text + giv_text
+        else:
+            text += giv_text
+
+    messages.append(text)
+
+    for msg in messages:
+        await message.answer(msg)
 
 
 @giveaway_interaction_router.message(F.text.startswith("/mygive"))
@@ -155,7 +168,7 @@ async def my_giveaway_details(message: Message, session: AsyncSession):
     giveaway = await orm_get_giveaway_by_id(session=session, giveaway_id=giveaway_id)
 
     if not giveaway or giveaway.user_id != user_id:
-        await message.answer(f"❌ Конкурс №{giveaway_id} не найден или у вас нет к нему доступа.")
+        await message.answer(f"❌ Розыгрыш №{giveaway_id} не найден или у вас нет к нему доступа.")
         return
 
     status = status_mapping.get(giveaway.status, "Неизвестный статус")
@@ -166,9 +179,9 @@ async def my_giveaway_details(message: Message, session: AsyncSession):
     end_count = giveaway.end_count
     end_datetime = giveaway.end_datetime.strftime('%d.%m.%Y %H:%M') if giveaway.end_datetime else None
     post_datetime = giveaway.post_datetime.strftime('%d.%m.%Y %H:%M')
-    text = (f"Конкурс №{giveaway_id}\n"
+    text = (f"<b>Розыгрыш №</b>{giveaway_id}\n"
             f"Статус: {status}\n"
-            f"Сообщение с конкурсом: <a href='{post_url}'>Ссылка</a>\n"
+            f"Сообщение с розыгрышем: <a href='{post_url}'>Ссылка</a>\n"
             f"Количество участников: {participants_count}\n"
             f"Количество победителей: {winners_count}\n"
             f"Время публикации: {post_datetime}\n")
@@ -204,7 +217,7 @@ async def delete_giveaway_sure(callback: CallbackQuery, session: AsyncSession):
     g_id = int(callback.data.split("_")[-1])
     await orm_delete_giveaway(session=session, giveaway_id=g_id, user_id=callback.from_user.id)
     await callback.message.delete()
-    await callback.message.answer("Розыгрыш успешно удалён.")
+    await callback.message.answer("✅ Розыгрыш успешно удален.")
 
 
 class EndCondition(StatesGroup):
@@ -218,7 +231,7 @@ async def change_end_condition(callback: CallbackQuery, state: FSMContext):
     g_id = int(callback.data.split("_")[-1])
     await state.update_data(giveaway_id=g_id)
     await state.set_state(EndCondition.giveaway_id)
-    await callback.message.answer("🗓 Как завершить конкурс?",
+    await callback.message.answer("🗓 Как завершить розыгрыш?",
                                   reply_markup=await get_callback_btns(
                                       btns={"По кол-ву участников": "change_end_count",
                                             "По времени": "change_end_time",
@@ -231,7 +244,7 @@ async def change_end_condition(callback: CallbackQuery, state: FSMContext):
                                             StateFilter(EndCondition.giveaway_id))
 async def change_end_count(callback: CallbackQuery, state: FSMContext):
     await callback.answer("")
-    await callback.message.answer("🏁 Укажите количество участников для проведения конкурса:\n\n",
+    await callback.message.answer("🏁 Укажите количество участников для проведения розыгрыша:\n\n",
                                   reply_markup=await get_callback_btns(
                                       btns={"Отмена": "cancel"},
                                       sizes=(1,)
@@ -248,7 +261,7 @@ async def change_end_count_data(message: Message, state: FSMContext, session: As
         end_count = int(message.text)
         await orm_update_giveaway_end_conditions(session=session, giveaway_id=giveaway_id, end_count=end_count,
                                                  end_datetime=None)
-        await message.answer("🎉 Количество участников для проведения конкурса изменено!")
+        await message.answer("🎉 Количество участников для проведения розыгрыша изменено!")
         await state.clear()
     else:
         await message.answer(f"❌ Количество участников не может быть меньше {p_count}!")
@@ -321,7 +334,7 @@ async def get_result_link(callback: CallbackQuery):
     giveaway_id = int(callback.data.split("_")[-1])
     g_id = await encode_giveaway_id(giveaway_id)
     await callback.message.answer("Эту ссылку вы можете опубликовать в канале в "
-                                  "подтверждение честности проведенного конкурса:\n\n"
+                                  "подтверждение честности проведенного розыгрыша:\n\n"
                                   f"<code>{await get_bot_link_to_start()}checkgive_{g_id}</code>")
 
 
@@ -370,7 +383,7 @@ async def add_winners_data(message: Message, state: FSMContext, session: AsyncSe
 
     if not winners:
         await message.answer(reply_to_message_id=message.message_id,
-                             text="Не нашлось участников, выполнивших условия конкурса, "
+                             text="Не нашлось участников, выполнивших условия розыгрыша, "
                                   "дополнительных победителей нет!")
     if winners:
         text = ""

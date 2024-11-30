@@ -13,7 +13,7 @@ from tools.utils import channel_info, get_bot_link_to_start, convert_id, get_cha
 
 
 async def get_giveaway_info_text(data: dict) -> str:
-    text = "❗️ Внимательно перепроверьте розыгрыш.</b>\n\n"
+    text = "❗️ <b>Внимательно перепроверьте розыгрыш.</b>\n\n"
     text += f"Пост розыгрыша в {await get_channel_hyperlink(data['channel_id'])}\n\n"
     text += f"🏆<b> Количество победителей: {data['winners_count']}</b>\n\n"
     text += f"🕒 Время публикации: "
@@ -30,8 +30,6 @@ async def get_giveaway_info_text(data: dict) -> str:
 async def get_giveaway_preview(data: dict, user_id: int = None, bot=None):
     text = data["text"]
     text += "\n\n<b>Условия участия:</b>\n\n"
-    if "extra_conditions" in data:
-        text += f'{data["extra_conditions"]}\n\n'
     if "sponsor_channels" not in data or data["channel_id"] not in data["sponsor_channels"]:
         channel = await channel_info(data["channel_id"])
         text += f"✅ Подпишись на <a href='{channel.invite_link}'>{channel.title}</a>\n"
@@ -39,6 +37,8 @@ async def get_giveaway_preview(data: dict, user_id: int = None, bot=None):
         for channel in data["sponsor_channels"]:
             channel = await channel_info(channel)
             text += f"✅ Подпишись на <a href='{channel.invite_link}'>{channel.title}</a>\n"
+    if "extra_conditions" in data:
+        text += f'{data["extra_conditions"]}\n\n'
     if "end_datetime" in data:
         text += (f"\nРезультаты розыгрыша: <b"
                  f">{datetime.datetime.fromisoformat(data['end_datetime']).strftime('%d.%m.%Y %H:%M')}</b>\n\n")
@@ -72,9 +72,6 @@ async def post_giveaway(giveaway):
     text += "\n\n<b>Условия участия:</b>\n\n"
     message = None
 
-    if giveaway.extra_conditions:
-        text += f'{giveaway.extra_conditions}\n\n'
-
     if not giveaway.sponsor_channel_ids or giveaway.channel_id not in giveaway.sponsor_channel_ids:
         channel = await channel_info(giveaway.channel_id)
         text += f"✅ Подпишись на <a href='{channel.invite_link}'>{channel.title}</a>\n"
@@ -84,9 +81,12 @@ async def post_giveaway(giveaway):
             channel = await channel_info(channel_id)
             text += f"✅ Подпишись на <a href='{channel.invite_link}'>{channel.title}</a>\n"
 
+    if giveaway.extra_conditions:
+        text += f"\n{giveaway.extra_conditions}\n\n"
+
     if giveaway.end_datetime:
-        text += (f"\nРезультаты розыгрыша: <b"
-                 f">{giveaway.end_datetime.strftime('%d.%m.%Y %H:%M')}</b>\n\n")
+        text += (f"\nРезультаты розыгрыша: "
+                 f"<b>{giveaway.end_datetime.strftime('%d.%m.%Y %H:%M')}</b>\n\n")
     else:
         text += f"\nРезультаты розыгрыша будут при достижении <b>{giveaway.end_count} участника(ов)</b>\n\n"
 
@@ -163,19 +163,19 @@ async def check_giveaway_text(session: AsyncSession, giveaway_id: int) -> str:
         participant_count = await redis_get_participants_count(giveaway_id)
 
         # Генерация текста о конкурсе
-        text = (f"Конкурс #{giveaway_id}\n"
-                f"<a href='{giveaway.post_url}'>Ссылка на конкурс</a>\n"
+        text = (f"Розыгрыш #{giveaway_id}\n"
+                f"<a href='{giveaway.post_url}'>Ссылка на розыгрыш</a>\n"
                 f"Кол-во участников: {participant_count}\n"
                 f"Кол-во победителей: {giveaway.winners_count}\n")
 
         # Проверяем, как завершился конкурс
         if giveaway.end_count is not None:
-            text += f"Конкурс завершен по кол-ву участников: {giveaway.end_count}\n"
+            text += f"Розыгрыш завершен по кол-ву участников: {giveaway.end_count}\n"
         elif giveaway.end_datetime is not None:
-            text += f"Конкурс завершён по времени: {giveaway.end_datetime.strftime('%d.%m.%Y %H:%M')}\n"
+            text += f"Розыгрыш завершён по времени: {giveaway.end_datetime.strftime('%d.%m.%Y %H:%M')}\n"
         c = 0
         # Добавляем результаты конкурса
-        text += "\nРезультаты конкурса:\n\nПобедитель:\n"
+        text += "\nРезультаты розыгрыша:\n\nПобедитель:\n"
         for winner_id in giveaway.winner_ids:
             c += 1
             chat = await bot.get_chat(winner_id)
