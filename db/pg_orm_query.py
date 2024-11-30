@@ -1,5 +1,5 @@
 from datetime import datetime
-from typing import List, Optional
+from typing import Optional
 
 from sqlalchemy import select, func, update, insert, delete
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -283,9 +283,6 @@ async def orm_add_winners(session: AsyncSession, giveaway_id: int, new_winners: 
         return True
     await session.close()
     return False
-
-
-
 
 
 # Needed for joining mechanism

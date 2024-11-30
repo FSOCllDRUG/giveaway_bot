@@ -13,11 +13,6 @@ async def redis_check_admin(user_id) -> bool:
     return await redis_conn.sismember("admins", user_id)
 
 
-async def redis_get_admins():
-    admins = await redis_conn.smembers("admins")
-    return set(admins)
-
-
 async def redis_temp_channel(us_id, ch_id):
     await redis_conn.set(f"{us_id}", ch_id, ex=600)
 

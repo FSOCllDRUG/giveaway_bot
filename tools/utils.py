@@ -1,6 +1,6 @@
 from aiogram.types import Message
 
-from create_bot import bot
+from create_bot import bot, env_admins
 
 
 async def get_bot_link_to_start() -> str:
@@ -43,3 +43,8 @@ async def convert_id(old_id: int) -> str:
 async def get_channel_hyperlink(channel_id: int) -> str:
     chat = await channel_info(channel_id)
     return f"<a href='{chat.invite_link}'>{chat.title}</a>"
+
+
+async def is_admin(user_id: int) -> bool:
+    is_env_admin = user_id in env_admins
+    return is_env_admin

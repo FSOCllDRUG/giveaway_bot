@@ -190,3 +190,4 @@ fabric.properties
 /docker_compose.yml
 /db/migrations/versions/
 /test.py
+/linux.env

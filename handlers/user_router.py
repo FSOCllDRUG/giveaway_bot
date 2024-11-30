@@ -7,20 +7,19 @@ from aiogram.types import Message, CallbackQuery
 from aiogram.utils.chat_action import ChatActionSender
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from create_bot import bot, env_admins
+from create_bot import bot
 from db.pg_orm_query import orm_add_channel, orm_add_admin_to_channel, orm_get_required_channels, orm_delete_channel
 from db.pg_orm_query import (
     orm_user_start,
     orm_get_user_data,
     orm_get_channels_for_admin)
-from db.r_operations import redis_check_admin
 from db.r_operations import redis_check_channel, redis_get_channel_id
 from filters.chat_type import ChatType
 from keyboards.inline import get_callback_btns
 from keyboards.reply import main_kb, get_keyboard
 from middlewares.activity_middleware import ActivityMiddleware
 from tools.texts import cbk_msg
-from tools.utils import msg_to_cbk, channel_info, convert_id, is_subscribed, get_channel_hyperlink
+from tools.utils import msg_to_cbk, channel_info, convert_id, is_subscribed, get_channel_hyperlink, is_admin
 
 user_router = Router()
 user_router.message.middleware(ActivityMiddleware())
@@ -32,7 +31,7 @@ user_router.message.filter(ChatType("private"))
 async def cancel_fsm(message: Message, state: FSMContext):
     await state.clear()
     await message.answer("❌ Действие отменено.",
-                         reply_markup=await main_kb(await redis_check_admin(message.from_user.id)))
+                         reply_markup=await main_kb(await is_admin(message.from_user.id)))
 
 
 @user_router.callback_query(StateFilter("*"), F.data == "cancel")
@@ -40,7 +39,7 @@ async def cancel_fsm(callback: CallbackQuery, state: FSMContext):
     await state.clear()
     await callback.answer("")
     await callback.message.answer("❌ Действие отменено.",
-                                  reply_markup=await main_kb(await redis_check_admin(callback.from_user.id)))
+                                  reply_markup=await main_kb(await is_admin(callback.from_user.id)))
 
 
 # "/start" handler
@@ -55,21 +54,20 @@ async def cmd_start(message: Message, session: AsyncSession, state: FSMContext):
             )
     if await orm_get_user_data(session, user_id=message.from_user.id) is not None:
         await message.answer(text,
-                             reply_markup=await main_kb(await redis_check_admin(message.from_user.id)))
+                             reply_markup=await main_kb(await is_admin(message.from_user.id)))
     else:
         await orm_user_start(session, data={
             "user_id": message.from_user.id,
             "username": message.from_user.username,
             "name": message.from_user.full_name,
-            "mailing": True if message.from_user.id in env_admins else False
         })
         await message.answer(text,
-                             reply_markup=await main_kb(await redis_check_admin(message.from_user.id)))
+                             reply_markup=await main_kb(await is_admin(message.from_user.id)))
 
 
 @user_router.message(F.text == "Главное меню")
 async def main_menu(message: Message):
-    await message.answer("<b>Вы в главном меню!</b>", reply_markup=await main_kb(await redis_check_admin(
+    await message.answer("<b>Вы в главном меню!</b>", reply_markup=await main_kb(await is_admin(
         message.from_user.id)))
 
 
@@ -145,7 +143,7 @@ async def check_channel(callback: CallbackQuery, session: AsyncSession, state: F
                 "✅ <b>Канал/группа</b>\n"
                 "<b>добавлен(а) успешно!</b>\n\n"
                 "Чтобы создать новый розыгрыш введите команду /new_give",
-                reply_markup=await main_kb(await redis_check_admin(callback.from_user.id)))
+                reply_markup=await main_kb(await is_admin(callback.from_user.id)))
             await state.clear()
 
         else:
@@ -162,7 +160,7 @@ async def channel_chosen(callback: CallbackQuery):
         "Создать пост": f"create_post_{channel_id}",
         "Удалить из бота": f"delete_channel_{channel_id}",
     }
-    if await redis_check_admin(callback.from_user.id):
+    if await is_admin(callback.from_user.id):
         btns["Изменить статус"] = f"required_status_{channel_id}"
     await callback.answer("")
     await callback.message.answer(
@@ -179,7 +177,7 @@ async def delete_channel(callback: CallbackQuery, session: AsyncSession):
     channel_id = int(callback.data.split("_")[-1])
     await orm_delete_channel(session, channel_id)
     await callback.message.answer("✅ <b>Канал успешно удален!</b>",
-                                  reply_markup=await main_kb(await redis_check_admin(callback.from_user.id)))
+                                  reply_markup=await main_kb(await is_admin(callback.from_user.id)))
 
 
 @user_router.message(F.text == "Создать пост")
@@ -235,7 +233,7 @@ async def make_post(callback: CallbackQuery, state: FSMContext, session: AsyncSe
                                       "В посте может быть\n"
                                       "приложен только <b><u>один</u></b> файл!\n\n"
                                       "<i>Файл - фото/видео/документ</i>\n"
-                                      "<i>Фголосовое сообщение/видео сообщение!</i>",
+                                      "<i>голосовое сообщение/видео сообщение!</i>",
                                       reply_markup=get_keyboard("Отмена",
                                                                 placeholder="Отправь сообщение, для поста"
                                                                 )
@@ -315,7 +313,7 @@ async def confirm_post(callback: CallbackQuery, state: FSMContext):
         await callback.message.answer("✅ <b>Пост успешно создан!</b>\n"
                                       f"Ссылка на пост: https://t.me/c/{await convert_id(data['channel_id'])}"
                                       f"/{post_id.message_id}",
-                                      reply_markup=await main_kb(await redis_check_admin(callback.from_user.id)))
+                                      reply_markup=await main_kb(await is_admin(callback.from_user.id)))
 
         await state.clear()
 
