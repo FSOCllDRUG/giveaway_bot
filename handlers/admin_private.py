@@ -204,7 +204,7 @@ async def get_users_giveaways(message: Message, session: AsyncSession):
         await message.answer(msg)
 
 
-@admin_private_router.message(F.text.startswith("/user_gives_"))
+@admin_private_router.message(F.text.startswith("/user_"))
 async def get_user_giveaways(message: Message, session: AsyncSession):
     user_id = int(message.text.split("_")[-1])
     my_givs = await format_giveaways_for_admin(await orm_get_user_giveaways(session=session, user_id=user_id))

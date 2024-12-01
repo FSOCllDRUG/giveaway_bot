@@ -65,6 +65,7 @@ async def admin_kb():
         # [KeyboardButton(text="Посмотреть админов")]
         # [KeyboardButton(text="Мои каналы/чаты")],
         [KeyboardButton(text="Рассылка")],
+        [KeyboardButton(text="Розыгрыши пользователей")],
         [KeyboardButton(text="Главное меню")]
     ]
     # if env_admin:
