@@ -42,8 +42,10 @@ async def publish_giveaway_results(giveaway_id):
         # Получаем всех участников
         participants = await redis_get_participants(giveaway_id)
         if not participants:
-            await bot.send_message(reply_to_message_id=msg_id, chat_id=giveaway.channel_id, text=("Розыгрыш завершен, "
-                                                                                                 "но участников нет."))
+            message = await bot.send_message(reply_to_message_id=msg_id, chat_id=giveaway.channel_id,
+                                             text="Розыгрыш завершен, но участников нет.")
+            await giveaway_result_notification(message, giveaway)
+
             await orm_update_giveaway_status(session, giveaway.id, GiveawayStatus.FINISHED)
             return
 
@@ -76,7 +78,7 @@ async def publish_giveaway_results(giveaway_id):
         giveaway_end_text += f"\n\n<a href='{await get_bot_link_to_start()}checkgive_{g_id}'>Проверить результаты</a>"
         message = await bot.send_message(reply_to_message_id=msg_id, chat_id=giveaway.channel_id,
                                          text=giveaway_end_text)
-        await giveaway_result_notification(message, giveaway)        # Обновить статус розыгрыша в базе данных
+        await giveaway_result_notification(message, giveaway)
         await orm_update_giveaway_status(session, giveaway.id, GiveawayStatus.FINISHED)
         if winners:
             await orm_add_winners(session, giveaway.id, winners)
