@@ -209,7 +209,7 @@ async def get_users_giveaways(message: Message, session: AsyncSession):
 async def get_user_giveaways(message: Message, session: AsyncSession):
     user_id = int(message.text.split("_")[-1])
     my_givs = await format_giveaways_for_admin(await orm_get_user_giveaways(session=session, user_id=user_id))
-    initial_text = f"<b>Розыгрыши пользователя <a href='tg://user?id={user_id}'>Пользователя</a></b>\n\n"
+    initial_text = f"<b>Розыгрыши <u><a href='tg://user?id={user_id}'>пользователя</a></u></b>\n\n"
     text = initial_text
     messages = []
     limit = 4096
