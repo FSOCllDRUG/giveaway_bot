@@ -367,7 +367,6 @@ async def orm_get_users_with_giveaways(session: AsyncSession):
         select(User.username, User.user_id)
         .join(Giveaway, User.user_id == Giveaway.user_id)
         .distinct()
-        .order_by(User.id.asc())
     )
     result = await session.execute(query)
     return result.all()
