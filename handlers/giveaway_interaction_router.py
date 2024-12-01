@@ -191,13 +191,12 @@ async def my_giveaway_details(message: Message, session: AsyncSession):
     if end_datetime:
         text += f"Время завершения: {end_datetime}\n"
     btns = {}
-    if status == "Ждёт публикации" or status == "Опубликован":
+    if status == "⏳ Ждёт публикации" or status == "✅ Опубликован":
         btns.update({"Изменить условия завершения розыгрыша": f"change_end_condition_{giveaway_id}"})
-    if status == "Опубликован":
+    if status == "✅ Опубликован":
         btns.update({"Подвести итоги прямо сейчас": f"finish_giveaway_{giveaway_id}"})
-    if status == "Завершён":
+    if status == "❌ Завершён":
         btns.update({"Получить ссылку на результаты": f"get_result_link_{giveaway_id}"})
-    if status == "Завершён":
         btns.update({"Выбрать дополнительных победителей": f"add_winners_{giveaway_id}"})
     btns.update({"Удалить розыгрыш": f"delete_giveaway_{giveaway_id}"})
     await message.answer(text, reply_markup=await get_callback_btns(btns=btns, sizes=(1,)))
