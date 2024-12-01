@@ -9,7 +9,8 @@ from db.pg_engine import session_maker
 from db.pg_models import GiveawayStatus
 from db.pg_orm_query import orm_get_giveaway_by_id, orm_get_due_giveaways, \
     orm_update_giveaway_status, orm_update_giveaway_post_data, orm_add_winners, orm_update_participants_count
-from db.r_operations import redis_create_giveaway, redis_get_participants, redis_expire_giveaway
+from db.r_operations import redis_create_giveaway, redis_get_participants, redis_expire_giveaway, \
+    redis_get_participants_count
 from tools.giveaway_utils import post_giveaway, giveaway_post_notification, giveaway_result_notification
 from tools.texts import encode_giveaway_id
 from tools.utils import convert_id, is_subscribed, get_bot_link_to_start
@@ -107,6 +108,13 @@ async def schedule_giveaways():
             giveaway_end_datetime = giveaway.end_datetime.replace(tzinfo=None) if giveaway.end_datetime else None
             if giveaway_end_datetime and giveaway_end_datetime <= current_time:
                 await publish_giveaway_results(giveaway.id)
+                continue
+
+            if giveaway.end_count is not None:
+                participants_count = await redis_get_participants_count(giveaway.id)
+                if participants_count >= giveaway.end_count:
+                    await publish_giveaway_results(giveaway.id)
+
         await asyncio.sleep(60)  # Проверяйте каждые 60 секунд
 
 
