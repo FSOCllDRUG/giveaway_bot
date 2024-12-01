@@ -67,7 +67,7 @@ async def start_join_giveaway(message: Message, command: CommandObject, session:
 
     if captcha:
         captcha_text, captcha_image = await generate_captcha()
-        await message.answer("❗️<b>Перед тем,как Вы станете участником розыгрыша, Мы должны убедиться, "
+        await message.answer("❗️<b>Перед тем, как Вы станете участником розыгрыша, Мы должны убедиться, "
                              "что Вы не бот.</b>")
         await redis_conn.setex(f"captcha:{user_id}", 300, captcha_text)  # Save captcha in redis with a TTL
         input_file = BufferedInputFile(captcha_image.getvalue(), filename=f"captcha{user_id}.png")
@@ -118,7 +118,8 @@ async def check_captcha(message: Message, state: FSMContext, session: AsyncSessi
         giveaway_id = data.get('giveaway_id')
         giveaway = await orm_get_giveaway_by_id(session=session, giveaway_id=giveaway_id)
         await add_participant_and_update_button(session, giveaway_id, user_id, giveaway.channel_id, giveaway.message_id)
-        await message.answer(f"🎉 Теперь вы участник розыгрыша #{giveaway_id}")
+        await message.answer(f"🎉 <b>Поздравляем!</b>\n"
+                             f"<b>Теперь Вы участник розыгрыша #{giveaway_id}!</b>")
         await state.clear()
         await add_participant_and_update_button(session, giveaway_id, user_id, message.chat.id, message.message_id)
         await redis_conn.delete(f"captcha:{user_id}")
