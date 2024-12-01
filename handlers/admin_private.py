@@ -191,7 +191,7 @@ async def get_users_giveaways(message: Message, session: AsyncSession):
     limit = 4096
 
     for user in users:
-        user_text = (f"/user_{user.user_id} <a href='tg://user?id={user.user_id}'"
+        user_text = (f"/user_{user.user_id} @<a href='tg://user?id={user.user_id}'"
                      f">{user.username if user.username else user.user_id}</a>\n")
         if len(text) + len(user_text) > limit:
             messages.append(text)
@@ -228,9 +228,9 @@ async def get_user_giveaways(message: Message, session: AsyncSession):
         await message.answer(msg)
 
 
-@admin_private_router.message(F.text.startswith == "/usergive_")
+@admin_private_router.message(F.text.startswith("/usergive"))
 async def get_user_giveaway(message: Message, session: AsyncSession):
-    giveaway_id = int(message.text.split("_")[-1])
+    giveaway_id = int(message.text.split("/usergive")[1].strip())
     giveaway = await orm_get_giveaway_by_id(session=session, giveaway_id=giveaway_id)
     status = status_mapping.get(giveaway.status, "Неизвестный статус")
     post_url = giveaway.post_url
