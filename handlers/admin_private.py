@@ -9,15 +9,15 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from create_bot import bot
 from db.pg_orm_query import orm_count_users, orm_get_mailing_list, orm_get_required_channels, orm_is_required_channel, \
     orm_change_required_channel, orm_get_users_with_giveaways, orm_get_user_giveaways, orm_get_giveaway_by_id
-from db.r_operations import redis_set_mailing_users, redis_set_mailing_msg, redis_set_msg_from, redis_set_mailing_btns, \
-    get_active_users_count, redis_get_participants_count
+from db.r_operations import (redis_set_mailing_users, redis_set_mailing_msg, redis_set_msg_from,
+                             redis_set_mailing_btns, get_active_users_count, redis_get_participants_count)
 from filters.chat_type import ChatType
 from filters.is_admin import IsAdmin
 from handlers.giveaway_interaction_router import status_mapping
 from keyboards.inline import get_callback_btns
 from keyboards.reply import get_keyboard, admin_kb
 from tools.mailing import simple_mailing
-from tools.texts import cbk_msg, format_giveaways, format_giveaways_for_admin
+from tools.texts import cbk_msg, format_giveaways_for_admin
 from tools.utils import msg_to_cbk, channel_info
 
 admin_private_router = Router()
@@ -102,8 +102,9 @@ async def btns_to_data(message: Message, state: FSMContext):
     await bot.copy_message(chat_id=message.from_user.id, from_chat_id=message.chat.id, message_id=data[
         "message"],
                            reply_markup=await get_callback_btns(btns=data["buttons"]))
-    await message.answer("Приступим к рассылке?", reply_markup=await get_callback_btns(btns={"Да": "confirm_mailing",
-                                                                                             "Переделать": "cancel_mailing"}))
+    await message.answer("Приступим к рассылке?",
+                         reply_markup=await get_callback_btns(btns={"Да": "confirm_mailing",
+                                                                    "Переделать": "cancel_mailing"}))
 
 
 @admin_private_router.callback_query(StateFilter(Mailing.message), F.data == "cancel_mailing")
@@ -191,7 +192,7 @@ async def get_users_giveaways(message: Message, session: AsyncSession):
 
     for user in users:
         user_text = (f"/user_{user.user_id} <a href='tg://user?id={user.user_id}'"
-                 f">{user.username if user.username else user.user_id}</a>\n")
+                     f">{user.username if user.username else user.user_id}</a>\n")
         if len(text) + len(user_text) > limit:
             messages.append(text)
             text = initial_text + user_text
@@ -225,7 +226,6 @@ async def get_user_giveaways(message: Message, session: AsyncSession):
 
     for msg in messages:
         await message.answer(msg)
-
 
 
 @admin_private_router.message(F.text.startswith == "/usergive")
