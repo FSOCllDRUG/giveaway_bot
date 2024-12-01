@@ -208,13 +208,14 @@ async def get_users_giveaways(message: Message, session: AsyncSession):
 @admin_private_router.message(F.text.startswith("/user_"))
 async def get_user_giveaways(message: Message, session: AsyncSession):
     user_id = int(message.text.split("_")[-1])
-    my_givs = await format_giveaways_for_admin(await orm_get_user_giveaways(session=session, user_id=user_id))
+    user_givs = await format_giveaways_for_admin(await orm_get_user_giveaways(session=session, user_id=user_id))
     initial_text = f"<b>Розыгрыши <u><a href='tg://user?id={user_id}'>пользователя</a></u></b>\n\n"
     text = initial_text
     messages = []
     limit = 4096
-
-    for giv in my_givs:
+    if not user_givs:
+        await message.answer("❌Пользователь не имеет розыгрышей!")
+    for giv in user_givs:
         giv_text = f"{giv}\n"
         if len(text) + len(giv_text) > limit:
             messages.append(text)

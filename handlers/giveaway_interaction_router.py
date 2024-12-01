@@ -145,6 +145,9 @@ async def my_gives(message: Message, session: AsyncSession):
     messages = []
     limit = 4096
 
+    if not my_givs:
+        await message.answer("❌ У вас нет розыгрышей!")
+
     for giv in my_givs:
         giv_text = f"{giv}\n"
         if len(text) + len(giv_text) > limit:
