@@ -360,3 +360,13 @@ async def orm_update_participants_count(session: AsyncSession, giveaway_id: int,
         update(Giveaway).where(Giveaway.id == giveaway_id).values(participants_count=participants_count)
     )
     await session.commit()
+
+
+async def orm_get_users_with_giveaways(session: AsyncSession):
+    query = (
+        select(User.username, User.user_id)
+        .join(Giveaway, User.user_id == Giveaway.user_id)
+        .distinct()
+    )
+    result = await session.execute(query)
+    return result.fetchall()

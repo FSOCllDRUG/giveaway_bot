@@ -8,15 +8,16 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from create_bot import bot
 from db.pg_orm_query import orm_count_users, orm_get_mailing_list, orm_get_required_channels, orm_is_required_channel, \
-    orm_change_required_channel
+    orm_change_required_channel, orm_get_users_with_giveaways, orm_get_user_giveaways, orm_get_giveaway_by_id
 from db.r_operations import redis_set_mailing_users, redis_set_mailing_msg, redis_set_msg_from, redis_set_mailing_btns, \
-    get_active_users_count
+    get_active_users_count, redis_get_participants_count
 from filters.chat_type import ChatType
 from filters.is_admin import IsAdmin
+from handlers.giveaway_interaction_router import status_mapping
 from keyboards.inline import get_callback_btns
 from keyboards.reply import get_keyboard, admin_kb
 from tools.mailing import simple_mailing
-from tools.texts import cbk_msg
+from tools.texts import cbk_msg, format_giveaways, format_giveaways_for_admin
 from tools.utils import msg_to_cbk, channel_info
 
 admin_private_router = Router()
@@ -179,3 +180,84 @@ async def change_required_status(callback: CallbackQuery, session: AsyncSession)
                                   reply_markup=await admin_kb()
                                   )
 
+
+@admin_private_router.message(F.text == "Розыгрыши пользователей")
+async def get_users_giveaways(message: Message, session: AsyncSession):
+    users = await orm_get_users_with_giveaways(session)
+    initial_text = "<b>👥Пользователи с розыгрышами</b>\n\n"
+    text = initial_text
+    messages = []
+    limit = 4096
+
+    for user in users:
+        user_text = (f"/user_{user.user_id} <a href='tg://user?id={user.user_id}'"
+                 f">{user.username if user.username else user.user_id}</a>\n")
+        if len(text) + len(user_text) > limit:
+            messages.append(text)
+            text = initial_text + user_text
+        else:
+            text += user_text
+
+    messages.append(text)
+
+    for msg in messages:
+        await message.answer(msg)
+
+
+@admin_private_router.message(F.text.startswith("/user_gives_"))
+async def get_user_giveaways(message: Message, session: AsyncSession):
+    user_id = int(message.text.split("_")[-1])
+    my_givs = await format_giveaways_for_admin(await orm_get_user_giveaways(session=session, user_id=user_id))
+    initial_text = f"<b>Розыгрыши пользователя <a href='tg://user?id={user_id}'>Пользователя</a></b>\n\n"
+    text = initial_text
+    messages = []
+    limit = 4096
+
+    for giv in my_givs:
+        giv_text = f"{giv}\n"
+        if len(text) + len(giv_text) > limit:
+            messages.append(text)
+            text = initial_text + giv_text
+        else:
+            text += giv_text
+
+    messages.append(text)
+
+    for msg in messages:
+        await message.answer(msg)
+
+
+
+@admin_private_router.message(F.text.startswith == "/usergive")
+async def get_user_giveaway(message: Message, session: AsyncSession):
+    giveaway_id = int(message.text.split("/mygive")[1].strip())
+    giveaway = await orm_get_giveaway_by_id(session=session, giveaway_id=giveaway_id)
+    status = status_mapping.get(giveaway.status, "Неизвестный статус")
+    post_url = giveaway.post_url
+    participants_count = giveaway.participants_count if status == "Завершён" else await redis_get_participants_count(
+        giveaway_id)
+    winners_count = giveaway.winners_count
+    end_count = giveaway.end_count
+    end_datetime = giveaway.end_datetime.strftime('%d.%m.%Y %H:%M') if giveaway.end_datetime else None
+    post_datetime = giveaway.post_datetime.strftime('%d.%m.%Y %H:%M')
+    text = (f"<b>Розыгрыш №</b>{giveaway_id}\n"
+            f"Статус: {status}\n"
+            f"Сообщение с розыгрышем: <a href='{post_url}'>Ссылка</a>\n"
+            f"Количество участников: {participants_count}\n"
+            f"Количество победителей: {winners_count}\n"
+            f"Время публикации: {post_datetime}\n")
+
+    if end_count:
+        text += f"Завершение при количестве участников: {end_count}\n"
+    if end_datetime:
+        text += f"Время завершения: {end_datetime}\n"
+    btns = {}
+    if status == "⏳ Ждёт публикации" or status == "✅ Опубликован":
+        btns.update({"Изменить условия завершения розыгрыша": f"change_end_condition_{giveaway_id}"})
+    if status == "✅ Опубликован":
+        btns.update({"Подвести итоги прямо сейчас": f"finish_giveaway_{giveaway_id}"})
+    if status == "❌ Завершён":
+        btns.update({"Получить ссылку на результаты": f"get_result_link_{giveaway_id}"})
+        btns.update({"Выбрать дополнительных победителей": f"add_winners_{giveaway_id}"})
+    btns.update({"Удалить розыгрыш": f"delete_giveaway_{giveaway_id}"})
+    await message.answer(text, reply_markup=await get_callback_btns(btns=btns, sizes=(1,)))

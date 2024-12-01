@@ -68,3 +68,17 @@ captcha_on_text = ("❗️<b>ВНИМАНИЕ.</b>\n"
 
 captcha_off_text = ("ℹ️ <i>Вы отключили капчу</i>❌\n"
                     "Теперь для участия в розыгрыше участникам не нужно решать графическую капчу.")
+
+
+async def format_giveaways_for_admin(giveaways):
+    formatted_giveaways = []
+    for giveaway in giveaways:
+        giveaway_id, text, status = giveaway
+        clean_text = await remove_html_tags(text)
+        status_icon = {
+            GiveawayStatus.NOT_PUBLISHED: "⏳",
+            GiveawayStatus.PUBLISHED: "✅",
+            GiveawayStatus.FINISHED: "☑️"
+        }.get(status, "❓")
+        formatted_giveaways.append(f"{status_icon} /usergive{giveaway_id} {clean_text}")
+    return formatted_giveaways
