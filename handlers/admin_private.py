@@ -16,6 +16,7 @@ from filters.is_admin import IsAdmin
 from handlers.giveaway_interaction_router import status_mapping
 from keyboards.inline import get_callback_btns
 from keyboards.reply import get_keyboard, admin_kb
+from tools.giveaway_utils import get_giveaway_preview, get_giveaway_post
 from tools.mailing import simple_mailing
 from tools.texts import cbk_msg, format_giveaways_for_admin
 from tools.utils import msg_to_cbk, channel_info
@@ -242,6 +243,11 @@ async def get_user_giveaway(message: Message, session: AsyncSession):
     end_count = giveaway.end_count
     end_datetime = giveaway.end_datetime.strftime('%d.%m.%Y %H:%M') if giveaway.end_datetime else None
     post_datetime = giveaway.post_datetime.strftime('%d.%m.%Y %H:%M')
+    await message.answer("Вот как выглядит пост розыгрыша:")
+    if status == "⏳ Ждёт публикации":
+        await get_giveaway_preview(giveaway, message.from_user.id)
+    if status == "✅ Опубликован" or status == "❌ Завершён":
+        await get_giveaway_post(giveaway, message.from_user.id)
     text = (f"<b>Розыгрыш №</b>{giveaway_id}\n"
             f"Статус: {status}\n"
             f"Сообщение с розыгрышем: <a href='{post_url}'>Ссылка</a>\n"

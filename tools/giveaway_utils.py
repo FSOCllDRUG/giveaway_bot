@@ -183,3 +183,43 @@ async def check_giveaway_text(session: AsyncSession, giveaway_id: int) -> str:
             user_username = f"@{chat.username}" if chat.username else ""
             text += f"{c}.<a href='tg://user?id={winner_id}'>{user_name}</a> ({user_username})\n"
         return text
+
+
+async def get_giveaway_post(giveaway, user_id):
+    text = giveaway.text
+    buttons = {f"{giveaway.button}": f"{await join_giveaway_link(giveaway.id)}"}
+    text += "\n\n<b>Условия участия:</b>\n\n"
+    message = None
+
+    if not giveaway.sponsor_channel_ids or giveaway.channel_id not in giveaway.sponsor_channel_ids:
+        channel = await channel_info(giveaway.channel_id)
+        text += f"✅ Подпишись на <a href='{channel.invite_link}'>{channel.title}</a>\n"
+
+    if giveaway.sponsor_channel_ids:
+        for channel_id in giveaway.sponsor_channel_ids:
+            channel = await channel_info(channel_id)
+            text += f"✅ Подпишись на <a href='{channel.invite_link}'>{channel.title}</a>\n"
+
+    if giveaway.extra_conditions:
+        text += f"\n{giveaway.extra_conditions}\n\n"
+
+    if giveaway.end_datetime:
+        text += (f"\nРезультаты розыгрыша: "
+                 f"<b>{giveaway.end_datetime.strftime('%d.%m.%Y %H:%M')}</b>\n\n")
+    else:
+        text += f"\nРезультаты розыгрыша будут при достижении <b>{giveaway.end_count} участника(ов)</b>\n\n"
+
+    if giveaway.media_type:
+        if giveaway.media_type == "photo":
+            message = await bot.send_photo(chat_id=user_id, photo=giveaway.media, caption=text,
+                                           reply_markup=await get_callback_btns(btns=buttons))
+        elif giveaway.media_type == "video":
+            message = await bot.send_video(chat_id=user_id, video=giveaway.media, caption=text,
+                                           reply_markup=await get_callback_btns(btns=buttons))
+        elif giveaway.media_type == "animation":
+            message = await bot.send_animation(chat_id=user_id, animation=giveaway.media, caption=text,
+                                               reply_markup=await get_callback_btns(btns=buttons))
+    else:
+        message = await bot.send_message(chat_id=user_id, text=text,
+                                         reply_markup=await get_callback_btns(btns=buttons))
+    return message
