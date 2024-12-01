@@ -191,8 +191,8 @@ async def get_users_giveaways(message: Message, session: AsyncSession):
     limit = 4096
 
     for user in users:
-        user_text = (f"/user_{user.user_id} @<a href='tg://user?id={user.user_id}'"
-                     f">{user.username if user.username else user.user_id}</a>\n")
+        user_text = (f"/user_{user.user_id} <a href='tg://user?id={user.user_id}'"
+                     f">{'@'+user.username if user.username else 'id'+user.user_id}</a>\n")
         if len(text) + len(user_text) > limit:
             messages.append(text)
             text = initial_text + user_text
