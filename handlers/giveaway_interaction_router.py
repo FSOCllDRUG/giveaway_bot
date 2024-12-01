@@ -147,6 +147,7 @@ async def my_gives(message: Message, session: AsyncSession):
 
     if not my_givs:
         await message.answer("❌ У вас нет розыгрышей!")
+        return
 
     for giv in my_givs:
         giv_text = f"{giv}\n"
