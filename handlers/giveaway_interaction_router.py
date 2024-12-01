@@ -214,7 +214,7 @@ async def delete_giveaway(callback: CallbackQuery):
 async def delete_giveaway_sure(callback: CallbackQuery, session: AsyncSession):
     await callback.answer("")
     g_id = int(callback.data.split("_")[-1])
-    await orm_delete_giveaway(session=session, giveaway_id=g_id, user_id=callback.from_user.id)
+    await orm_delete_giveaway(session=session, giveaway_id=g_id)
     await callback.message.delete()
     await callback.message.answer("✅ Розыгрыш успешно удален.")
 

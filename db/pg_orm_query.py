@@ -219,12 +219,12 @@ async def orm_get_user_giveaways(session: AsyncSession, user_id: int):
     return [(row.id, row.text[:35], row.status) for row in giveaways]
 
 
-async def orm_delete_giveaway(session: AsyncSession, giveaway_id: int, user_id: int):
+async def orm_delete_giveaway(session: AsyncSession, giveaway_id: int):
     result = await session.execute(
         select(Giveaway).where(Giveaway.id == giveaway_id)
     )
     giveaway = result.scalar_one_or_none()
-    if giveaway and giveaway.user_id == user_id:
+    if giveaway:
         await session.delete(giveaway)
         await session.commit()
         await session.close()
