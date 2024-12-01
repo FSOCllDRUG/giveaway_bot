@@ -364,12 +364,10 @@ async def orm_update_participants_count(session: AsyncSession, giveaway_id: int,
 
 async def orm_get_users_with_giveaways(session: AsyncSession):
     query = (
-        select(User.username, User.user_id, User.id)
+        select(User.username, User.user_id)
         .join(Giveaway, User.user_id == Giveaway.user_id)
         .distinct()
         .order_by(User.id.asc())
     )
     result = await session.execute(query)
-
-    users_with_giveaways = [{"username": row.username, "user_id": row.user_id} for row in result.fetchall()]
-    return users_with_giveaways
+    return result.all()
