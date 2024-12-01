@@ -79,7 +79,8 @@ async def start_join_giveaway(message: Message, command: CommandObject, session:
     else:
         await add_participant_and_update_button(session, giveaway_id, user_id, giveaway.channel_id, giveaway.message_id)
         await state.clear()
-        await message.answer(f"🎉 Теперь вы участник розыгрыша #{giveaway_id}")
+        await message.answer(f"🎉 <b>Поздравляем!</b>\n"
+                             f"<b>Теперь Вы участник розыгрыша #{giveaway_id}!</b>")
         if end_count:
             if await redis_get_participants_count(giveaway_id) >= end_count:
                 await publish_giveaway_results(giveaway_id)
@@ -112,7 +113,7 @@ async def check_captcha(message: Message, state: FSMContext, session: AsyncSessi
     attempts_left = data.get('attempts_left', 3)
 
     if captcha_text and user_input == captcha_text:
-        await message.answer("Капча пройдена успешно!")
+        await message.answer("✅ Капча пройдена успешно!")
         data = await state.get_data()
         giveaway_id = data.get('giveaway_id')
         giveaway = await orm_get_giveaway_by_id(session=session, giveaway_id=giveaway_id)
@@ -351,10 +352,9 @@ async def add_winners(callback: CallbackQuery, state: FSMContext):
     giveaway_id = int(callback.data.split("_")[-1])
     await state.update_data(giveaway_id=giveaway_id)
     await state.set_state(AddWinners.giveaway_id)
-    await callback.message.answer("🟡Примечание:\n"
-                                  "Список участников розыгрыша хранится <u><b><i>7 дней</i></b></u> после его "
-                                  "завершения!\n\n"
-                                  "🏁 Укажите количество дополнительных победителей:\n\n",
+    await callback.message.answer("❗️<b>Примечание:</b>\n"
+                                  "Список участников розыгрыша хранится <b>7 ДНЕЙ</b> после его завершения!\n\n"
+                                  "🏁 Укажите количество дополнительных победителей:",
                                   reply_markup=await get_callback_btns(
                                       btns={"Отмена": "cancel"},
                                       sizes=(1,)
