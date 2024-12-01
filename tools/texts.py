@@ -80,5 +80,5 @@ async def format_giveaways_for_admin(giveaways):
             GiveawayStatus.PUBLISHED: "✅",
             GiveawayStatus.FINISHED: "☑️"
         }.get(status, "❓")
-        formatted_giveaways.append(f"{status_icon} /usergive{giveaway_id} {clean_text}")
+        formatted_giveaways.append(f"{status_icon} /usergive_{giveaway_id} {clean_text}")
     return formatted_giveaways
