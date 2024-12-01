@@ -230,7 +230,7 @@ async def get_user_giveaways(message: Message, session: AsyncSession):
 
 @admin_private_router.message(F.text.startswith == "/usergive")
 async def get_user_giveaway(message: Message, session: AsyncSession):
-    giveaway_id = int(message.text.split("/mygive")[1].strip())
+    giveaway_id = int(message.text.split("/usergive")[1].strip())
     giveaway = await orm_get_giveaway_by_id(session=session, giveaway_id=giveaway_id)
     status = status_mapping.get(giveaway.status, "Неизвестный статус")
     post_url = giveaway.post_url
