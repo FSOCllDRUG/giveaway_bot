@@ -214,7 +214,7 @@ async def get_user_giveaways(message: Message, session: AsyncSession):
     messages = []
     limit = 4096
     if not user_givs:
-        await message.answer("❌Пользователь не имеет розыгрышей!")
+        await message.answer("❌ Пользователь не имеет розыгрышей!")
         return
     for giv in user_givs:
         giv_text = f"{giv}\n"
