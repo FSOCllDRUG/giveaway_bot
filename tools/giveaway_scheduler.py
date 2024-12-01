@@ -38,7 +38,7 @@ async def publish_giveaway_results(giveaway_id):
     giveaway = await orm_get_giveaway_by_id(session, giveaway_id)
     msg_id = giveaway.message_id
 
-    if giveaway:
+    if giveaway and giveaway.status != GiveawayStatus.FINISHED:
         # Получаем всех участников
         participants = await redis_get_participants(giveaway_id)
         if not participants:
