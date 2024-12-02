@@ -2,6 +2,7 @@ from datetime import datetime
 from typing import Optional
 
 from sqlalchemy import select, func, update, insert, delete
+from sqlalchemy.exc import IntegrityError
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from db.pg_models import User, Channel, user_channel_association, Giveaway, GiveawayStatus
@@ -371,3 +372,22 @@ async def orm_get_users_with_giveaways(session: AsyncSession):
     )
     result = await session.execute(query)
     return result.all()
+
+
+async def orm_add_channel_and_admin(session: AsyncSession, channel_id: int, user_id: int):
+    try:
+        async with session.begin():
+            new_channel = Channel(channel_id=channel_id)
+            session.add(new_channel)
+
+            association = {
+                'user_id': user_id,
+                'channel_id': channel_id
+            }
+            await session.execute(insert(user_channel_association).values(association))
+
+        await session.commit()
+
+    except IntegrityError as e:
+        await session.rollback()
+        print(f"Error occurred: {e}")
