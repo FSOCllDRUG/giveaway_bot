@@ -13,7 +13,8 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from create_bot import bot
 from db.pg_models import GiveawayStatus
 from db.pg_orm_query import orm_get_join_giveaway_data, orm_get_user_giveaways, orm_get_giveaway_by_id, \
-    orm_get_giveaway_end_count, orm_delete_giveaway, orm_update_giveaway_end_conditions, orm_add_winners
+    orm_get_giveaway_end_count, orm_delete_giveaway, orm_update_giveaway_end_conditions, orm_add_winners, \
+    orm_get_user_data, orm_user_start
 from db.r_engine import redis_conn
 from db.r_operations import redis_get_participants, redis_get_participants_count
 from filters.chat_type import ChatType
@@ -46,6 +47,12 @@ class Captcha(StatesGroup):
 async def start_join_giveaway(message: Message, command: CommandObject, session: AsyncSession, state: FSMContext):
     encoded_id = command.args.split("_")[-1]
     giveaway_id = await decode_giveaway_id(encoded_id)
+    if await orm_get_user_data(session, user_id=message.from_user.id) is None:
+        await orm_user_start(session, data={
+            "user_id": message.from_user.id,
+            "username": message.from_user.username,
+            "name": message.from_user.full_name,
+        })
     giveaway = await orm_get_giveaway_by_id(session=session, giveaway_id=giveaway_id)
     if giveaway is None:
         await message.answer("Розыгрыш не найден.")
@@ -93,6 +100,12 @@ async def start_check_giveaway(message: Message, command: CommandObject, session
     encoded_id = command.args.split("_")[-1]
     giveaway_id = await decode_giveaway_id(encoded_id)
     giveaway = await orm_get_giveaway_by_id(session=session, giveaway_id=giveaway_id)
+    if await orm_get_user_data(session, user_id=message.from_user.id) is None:
+        await orm_user_start(session, data={
+            "user_id": message.from_user.id,
+            "username": message.from_user.username,
+            "name": message.from_user.full_name,
+        })
     if giveaway is None:
         await message.answer("Розыгрыш не найден.")
         return
