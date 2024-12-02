@@ -8,7 +8,7 @@ from aiogram.utils.chat_action import ChatActionSender
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from create_bot import bot
-from db.pg_orm_query import orm_get_required_channels, orm_delete_channel, orm_add_channel_and_admin, orm_add_channel, \
+from db.pg_orm_query import orm_get_required_channels, orm_delete_channel, orm_add_channel, \
     orm_add_admin_to_channel
 from db.pg_orm_query import (
     orm_user_start,
@@ -138,7 +138,6 @@ async def check_channel(callback: CallbackQuery, session: AsyncSession, state: F
     if channel_id:
         check = await redis_check_channel(user_id, channel_id)
         if check:
-            # await orm_add_channel_and_admin(session, channel_id, user_id)
             await orm_add_channel(session, channel_id)
             await orm_add_admin_to_channel(session, user_id, channel_id)
             await callback.message.answer(
@@ -327,7 +326,7 @@ async def support(message: Message):
 
                          "<b>🗒️Инструкция по</b>\n"
                          "<b>использованию бота:</b>\n"
-                         "https://t.me/WinGiveBot_info\n\n"
+                         "https://t.me/WinGiveInfo\n\n"
 
                          "Если Вы сделаете все по инструкции,то у Вас все получится!")
 
