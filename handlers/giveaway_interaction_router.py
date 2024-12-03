@@ -19,11 +19,12 @@ from db.r_engine import redis_conn
 from db.r_operations import redis_get_participants, redis_get_participants_count
 from filters.chat_type import ChatType
 from keyboards.inline import get_callback_btns
+from keyboards.reply import main_kb
 from tools.captcha import generate_captcha
 from tools.giveaway_scheduler import publish_giveaway_results
 from tools.giveaway_utils import add_participant_and_update_button, check_giveaway_text
 from tools.texts import decode_giveaway_id, format_giveaways, datetime_example, encode_giveaway_id
-from tools.utils import is_subscribed, get_bot_link_to_start
+from tools.utils import is_subscribed, get_bot_link_to_start, is_admin
 
 giveaway_interaction_router = Router()
 giveaway_interaction_router.message.filter(ChatType("private"))
@@ -55,21 +56,23 @@ async def start_join_giveaway(message: Message, command: CommandObject, session:
         })
     giveaway = await orm_get_giveaway_by_id(session=session, giveaway_id=giveaway_id)
     if giveaway is None:
-        await message.answer("Розыгрыш не найден.")
+        await message.answer("Розыгрыш не найден.", reply_markup=await main_kb(await is_admin(message.from_user.id)))
         return
     elif giveaway.status == GiveawayStatus.FINISHED:
-        await message.answer("Розыгрыш уже завершён.")
+        await message.answer("Розыгрыш уже завершён.", reply_markup=await main_kb(await is_admin(message.from_user.id)))
         return
     user_id = message.from_user.id
     if user_id in await redis_get_participants(giveaway_id):
-        await message.answer(f"❗️Вы уже участвуете в этом розыгрыше.")
+        await message.answer(f"❗️Вы уже участвуете в этом розыгрыше.",
+                             reply_markup=await main_kb(await is_admin(message.from_user.id)))
         return
     sponsor_channels, captcha, end_count = await orm_get_join_giveaway_data(session=session,
                                                                             giveaway_id=giveaway_id)
 
     if await is_subscribed(channels=sponsor_channels, user_id=user_id) == False:
         await message.answer(
-            f"Чтобы участвовать в розыгрыше, вам необходимо подписаться на все указанные в нём каналы.")
+            f"Чтобы участвовать в розыгрыше, вам необходимо подписаться на все указанные в нём каналы.",
+            reply_markup=await main_kb(await is_admin(message.from_user.id)))
         return
 
     if captcha:
@@ -87,7 +90,8 @@ async def start_join_giveaway(message: Message, command: CommandObject, session:
         await add_participant_and_update_button(session, giveaway_id, user_id, giveaway.channel_id, giveaway.message_id)
         await state.clear()
         await message.answer(f"🎉 <b>Поздравляем!</b>\n"
-                             f"<b>Теперь Вы участник розыгрыша #{giveaway_id}!</b>")
+                             f"<b>Теперь Вы участник розыгрыша #{giveaway_id}!</b>",
+                             reply_markup=await main_kb(await is_admin(message.from_user.id)))
         if end_count:
             if await redis_get_participants_count(giveaway_id) >= end_count:
                 await publish_giveaway_results(giveaway_id)
@@ -107,12 +111,15 @@ async def start_check_giveaway(message: Message, command: CommandObject, session
             "name": message.from_user.full_name,
         })
     if giveaway is None:
-        await message.answer("Розыгрыш не найден.")
+        await message.answer("Розыгрыш не найден.",
+                             reply_markup=await main_kb(await is_admin(message.from_user.id)))
         return
     elif giveaway.status == GiveawayStatus.PUBLISHED or giveaway.status == GiveawayStatus.NOT_PUBLISHED:
-        await message.answer("Розыгрыш ещё не завершён.")
+        await message.answer("Розыгрыш ещё не завершён.",
+                             reply_markup=await main_kb(await is_admin(message.from_user.id)))
     else:
-        await message.answer(text=await check_giveaway_text(session=session, giveaway_id=giveaway_id))
+        await message.answer(text=await check_giveaway_text(session=session, giveaway_id=giveaway_id),
+                             reply_markup=await main_kb(await is_admin(message.from_user.id)))
         return
 
 
@@ -126,7 +133,8 @@ async def check_captcha(message: Message, state: FSMContext, session: AsyncSessi
     attempts_left = data.get('attempts_left', 3)
 
     if captcha_text and user_input == captcha_text:
-        await message.answer("✅ Капча пройдена успешно!")
+        await message.answer("✅ Капча пройдена успешно!",
+                             reply_markup=await main_kb(await is_admin(message.from_user.id)))
         data = await state.get_data()
         giveaway_id = data.get('giveaway_id')
         giveaway = await orm_get_giveaway_by_id(session=session, giveaway_id=giveaway_id)
@@ -146,7 +154,8 @@ async def check_captcha(message: Message, state: FSMContext, session: AsyncSessi
             await message.answer(f"Неправильный текст капчи. Попробуйте еще раз. Осталось попыток: {attempts_left}")
             await state.update_data(attempts_left=attempts_left)
         else:
-            await message.answer("Вы исчерпали все попытки. Попробуйте снова позже.")
+            await message.answer("Вы исчерпали все попытки. Попробуйте снова позже.",
+                                 reply_markup=await main_kb(await is_admin(message.from_user.id)))
             await state.clear()
             await redis_conn.delete(f"captcha:{user_id}")
 
