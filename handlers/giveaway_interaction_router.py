@@ -50,7 +50,7 @@ async def start_join_giveaway(message: Message, command: CommandObject, session:
     if await orm_get_user_data(session, user_id=message.from_user.id) is None:
         await orm_user_start(session, data={
             "user_id": message.from_user.id,
-            "username": message.from_user.username,
+            "username": message.from_user.username if message.from_user.username is not None else None,
             "name": message.from_user.full_name,
         })
     giveaway = await orm_get_giveaway_by_id(session=session, giveaway_id=giveaway_id)
@@ -103,7 +103,7 @@ async def start_check_giveaway(message: Message, command: CommandObject, session
     if await orm_get_user_data(session, user_id=message.from_user.id) is None:
         await orm_user_start(session, data={
             "user_id": message.from_user.id,
-            "username": message.from_user.username,
+            "username": message.from_user.username if message.from_user.username is not None else None,
             "name": message.from_user.full_name,
         })
     if giveaway is None:

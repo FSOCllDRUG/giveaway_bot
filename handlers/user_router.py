@@ -59,7 +59,7 @@ async def cmd_start(message: Message, session: AsyncSession, state: FSMContext):
     else:
         await orm_user_start(session, data={
             "user_id": message.from_user.id,
-            "username": message.from_user.username,
+            "username": message.from_user.username if message.from_user.username is not None else None,
             "name": message.from_user.full_name,
         })
         await message.answer(text,

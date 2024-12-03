@@ -240,7 +240,6 @@ async def create_giveaway_sponsor_channels(message: Message, state: FSMContext):
             data["sponsor_channels"].append(chat.id)
             await state.set_data(data)
 
-
             ch_text = (f"✅ Канал {channel_name} добавлен, Вы можете добавить еще один или продолжить создание "
                        f"розыгрыша!\n\n"
                        "<b>Чтобы добавить еще каналы, просто присылайте на них ссылки.</b>"
