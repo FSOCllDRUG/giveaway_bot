@@ -17,25 +17,6 @@ async def datetime_example():
     return text
 
 
-async def remove_html_tags(text):
-    clean_text = re.sub(r"<.*?>", "", text)
-    return clean_text
-
-
-async def format_giveaways(giveaways):
-    formatted_giveaways = []
-    for giveaway in giveaways:
-        giveaway_id, text, status = giveaway
-        clean_text = await remove_html_tags(text)
-        status_icon = {
-            GiveawayStatus.NOT_PUBLISHED: "⏳",
-            GiveawayStatus.PUBLISHED: "✅",
-            GiveawayStatus.FINISHED: "☑️"
-        }.get(status, "❓")
-        formatted_giveaways.append(f"{status_icon} /mygive{giveaway_id} {clean_text}")
-    return formatted_giveaways
-
-
 async def encode_giveaway_id(giveaway_id: int) -> str:
     return base64.urlsafe_b64encode(str(giveaway_id).encode()).decode()
 
@@ -68,6 +49,28 @@ captcha_on_text = ("❗️<b>ВНИМАНИЕ.</b>\n"
 
 captcha_off_text = ("ℹ️ <i>Вы отключили капчу</i>❌\n"
                     "Теперь для участия в розыгрыше участникам не нужно решать графическую капчу.")
+
+
+async def remove_html_tags(text):
+    # Remove HTML tags
+    clean_text = re.sub(r"<.*?>", "", text)
+    # Replace newlines and other whitespace characters with a single space
+    clean_text = re.sub(r"\s+", " ", clean_text)
+    return clean_text
+
+
+async def format_giveaways(giveaways):
+    formatted_giveaways = []
+    for giveaway in giveaways:
+        giveaway_id, text, status = giveaway
+        clean_text = await remove_html_tags(text)
+        status_icon = {
+            GiveawayStatus.NOT_PUBLISHED: "⏳",
+            GiveawayStatus.PUBLISHED: "✅",
+            GiveawayStatus.FINISHED: "☑️"
+        }.get(status, "❓")
+        formatted_giveaways.append(f"{status_icon} /mygive{giveaway_id} {clean_text}")
+    return formatted_giveaways
 
 
 async def format_giveaways_for_admin(giveaways):
