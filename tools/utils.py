@@ -1,6 +1,8 @@
 from aiogram.types import Message
-
+from aiogram.exceptions import TelegramForbiddenError
 from create_bot import bot, env_admins
+from db.pg_orm_query import orm_delete_channel_and_association
+from sqlalchemy.ext.asyncio import AsyncSession
 
 
 async def get_bot_link_to_start() -> str:
@@ -26,9 +28,12 @@ async def is_subscribed(channels: list, user_id: int) -> bool:
     return True
 
 
-async def channel_info(channel_id: int):
-    chat = await bot.get_chat(channel_id)
-    return chat
+async def channel_info(session: AsyncSession, channel_id: int):
+    try:
+        chat = await bot.get_chat(channel_id)
+        return chat
+    except TelegramForbiddenError:
+        await orm_delete_channel_and_association(session=session, channel_id=channel_id)
 
 
 async def convert_id(old_id: int) -> str:
@@ -40,8 +45,8 @@ async def convert_id(old_id: int) -> str:
     return old_id_str
 
 
-async def get_channel_hyperlink(channel_id: int) -> str:
-    chat = await channel_info(channel_id)
+async def get_channel_hyperlink(session: AsyncSession, channel_id: int) -> str:
+    chat = await channel_info(session=session, channel_id=channel_id)
     return f"<a href='{chat.invite_link}'>{chat.title}</a>"
 
 

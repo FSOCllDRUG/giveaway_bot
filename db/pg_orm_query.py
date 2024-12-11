@@ -371,3 +371,15 @@ async def orm_get_users_with_giveaways(session: AsyncSession):
     )
     result = await session.execute(query)
     return result.all()
+
+
+async def orm_delete_channel_and_association(session: AsyncSession, channel_id: int):
+    await session.execute(
+        delete(user_channel_association).where(user_channel_association.c.channel_id == channel_id)
+    )
+
+    await session.execute(
+        delete(Channel).where(Channel.channel_id == channel_id)
+    )
+
+    await session.commit()
