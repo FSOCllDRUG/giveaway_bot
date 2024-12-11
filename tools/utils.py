@@ -47,7 +47,7 @@ async def convert_id(old_id: int) -> str:
 
 async def get_channel_hyperlink(session: AsyncSession, channel_id: int) -> str:
     chat = await channel_info(session=session, channel_id=channel_id)
-    return f"<a href='{chat.invite_link}'>{chat.title}</a>"
+    return f"<a href='{chat.invite_link}'>{chat.title+' бот кикнут. Удалите канал/группу из бота'}</a>"
 
 
 async def is_admin(user_id: int) -> bool:
