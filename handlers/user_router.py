@@ -85,6 +85,8 @@ async def get_user_channels(message: Message, session: AsyncSession):
     btns = {}
     for channel in channels:
         chat = await channel_info(channel.channel_id)
+        if chat is None:
+            await message.answer("Ошибка в канале с id: " + str(channel.channel_id))
         channels_str += f"{await get_channel_hyperlink(channel.channel_id)}\n"
         btns[chat.title] = f"channel_{channel.channel_id}"
     btns["Добавить канал/группу"] = "add_channel"
