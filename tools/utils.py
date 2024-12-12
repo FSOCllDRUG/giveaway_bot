@@ -53,11 +53,7 @@ async def channel_info(channel_id: int):
         if am_i_admin:
             return chat
         else:
-            result = await orm_delete_channel_and_association(session=session, channel_id=channel_id)
-            if result:
-                await bot.send_message(6092344340, f"Channel {channel_id} was deleted from DB")
-            else:
-                await bot.send_message(6092344340, f"Failed to delete channel {channel_id} from DB")
+            await orm_delete_channel_and_association(session=session, channel_id=channel_id)
     except TelegramBadRequest as e:
         print(f"Error checking channel info: {e}")
         return None

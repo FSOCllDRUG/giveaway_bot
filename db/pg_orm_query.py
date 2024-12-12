@@ -384,4 +384,3 @@ async def orm_delete_channel_and_association(session: AsyncSession, channel_id: 
     )
 
     await session.commit()
-    await asyncio.sleep(0.3)
