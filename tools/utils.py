@@ -1,5 +1,5 @@
 from aiogram.types import Message
-from aiogram.exceptions import TelegramForbiddenError
+from aiogram.exceptions import TelegramForbiddenError, TelegramBadRequest
 from create_bot import bot, env_admins
 from db.pg_orm_query import orm_delete_channel_and_association
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -31,12 +31,27 @@ async def is_subscribed(channels: list, user_id: int) -> bool:
     return True
 
 
+async def is_bot_admin(chat_id: int) -> bool:
+    try:
+        bot_info = await bot.get_me()
+        bot_id = bot_info.id
+
+        chat_member = await bot.get_chat_member(chat_id, bot_id)
+
+        return chat_member.status in ['administrator', 'creator']
+
+    except TelegramBadRequest as e:
+        print(f"Error checking admin status: {e}")
+        return False
+
+
 async def channel_info(channel_id: int):
-    # try:
-        chat = await bot.get_chat(channel_id)
-        print(chat)
-        print(type(chat))
+    chat = await bot.get_chat(channel_id)
+    am_i_admin = await is_bot_admin(chat_id=channel_id)
+    if am_i_admin:
         return chat
+    else:
+        await orm_delete_channel_and_association(session=session, channel_id=channel_id)
     # except TelegramForbiddenError:
     #     result = await orm_delete_channel_and_association(session=session, channel_id=channel_id)
     #     if result:
