@@ -1,5 +1,5 @@
 from aiogram.types import Message
-from aiogram.exceptions import TelegramForbiddenError, TelegramBadRequest
+from aiogram.exceptions import TelegramBadRequest
 from create_bot import bot, env_admins
 from db.pg_engine import session_maker
 from db.pg_orm_query import orm_delete_channel_and_association
@@ -32,13 +32,13 @@ async def is_subscribed(channels: list, user_id: int) -> bool:
 
 async def is_bot_admin(chat_id: int) -> bool:
     try:
-        bot_info = await bot.get_me()
-        bot_id = bot_info.id
-
-        chat_member = await bot.get_chat_member(chat_id, bot_id)
-
-        return chat_member.status in ['administrator', 'creator']
-
+        chat = await bot.get_chat(chat_id)
+        if chat.type == 'channel':
+            return chat.permissions.can_send_messages
+        else:
+            bot_info = await bot.get_me()
+            chat_member = await bot.get_chat_member(chat_id, bot_info.id)
+            return chat_member.status in ['administrator', 'creator']
     except TelegramBadRequest as e:
         print(f"Error checking admin status: {e}")
         return False
@@ -68,8 +68,8 @@ async def convert_id(old_id: int) -> str:
 
 async def get_channel_hyperlink(channel_id: int) -> str:
     chat = await channel_info(channel_id=channel_id)
-    if chat.invite_link is None:
-        return f"<a href={chat.invite_link}><s>{chat.title}</s>(Удалите канал/группу из бота)</a>"
+    if chat is None:
+        return ""
     else:
         return f"<a href='{chat.invite_link}'>{chat.title}</a>"
 
