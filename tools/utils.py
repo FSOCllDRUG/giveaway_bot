@@ -34,6 +34,8 @@ async def is_subscribed(channels: list, user_id: int) -> bool:
 async def channel_info(channel_id: int):
     # try:
         chat = await bot.get_chat(channel_id)
+        print(chat)
+        print(type(chat))
         return chat
     # except TelegramForbiddenError:
     #     result = await orm_delete_channel_and_association(session=session, channel_id=channel_id)
