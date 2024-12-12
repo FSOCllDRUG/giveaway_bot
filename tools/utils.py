@@ -32,12 +32,7 @@ async def is_subscribed(channels: list, user_id: int) -> bool:
 async def is_bot_admin(chat_id: int) -> bool:
     try:
         chat = await bot.get_chat(chat_id)
-        if chat.type == 'channel':
-            return True
-        else:
-            bot_info = await bot.get_me()
-            chat_member = await bot.get_chat_member(chat_id, bot_info.id)
-            return chat_member.status in ['administrator', 'creator']
+        return chat.invite_link is not None
     except TelegramBadRequest as e:
         print(f"Error checking admin status: {e}")
         return False
@@ -46,10 +41,10 @@ async def is_bot_admin(chat_id: int) -> bool:
 async def channel_info(channel_id: int):
     try:
         chat = await bot.get_chat(channel_id)
-        am_i_admin = await is_bot_admin(chat_id=channel_id)
-        if am_i_admin:
+        if chat.invite_link is not None:
             return chat
         else:
+            print(f"Bot is not admin in channel {channel_id}")
             return None
     except TelegramBadRequest as e:
         print(f"Error checking channel info: {e}")
