@@ -84,8 +84,8 @@ async def get_user_channels(message: Message, session: AsyncSession):
     channels_str = ""
     btns = {}
     for channel in channels:
-        chat = await channel_info(session=session, channel_id=channel.channel_id)
-        channels_str += f"{await get_channel_hyperlink(session=session, channel_id=channel.channel_id)}\n"
+        chat = await channel_info(channel_id=channel.channel_id)
+        channels_str += f"{await get_channel_hyperlink(channel_id=channel.channel_id)}\n"
         btns[chat.title] = f"channel_{channel.channel_id}"
     btns["Добавить канал/группу"] = "add_channel"
     await message.answer(f"❗️<b>Ваши каналы:</b>\n{channels_str}",
@@ -114,7 +114,7 @@ async def start_add_channel(callback: CallbackQuery, state: FSMContext):
 
 
 @user_router.callback_query(StateFilter(AddChannel.channel_id), F.data == "added_to_channel")
-async def bot_added_to_channel(callback: CallbackQuery, state: FSMContext, session: AsyncSession):
+async def bot_added_to_channel(callback: CallbackQuery, state: FSMContext):
     chat_id = await redis_get_channel_id(callback.from_user.id)
     if chat_id is None:
         await callback.answer("")
@@ -124,7 +124,7 @@ async def bot_added_to_channel(callback: CallbackQuery, state: FSMContext, sessi
         await callback.answer("")
         await state.update_data(channel_id=chat_id)
         await callback.message.answer(f"Это этот канал/группа:"
-                                      f"\n•{await get_channel_hyperlink(session=session, channel_id=chat_id)}?",
+                                      f"\n•{await get_channel_hyperlink(channel_id=chat_id)}?",
                                       reply_markup=await get_callback_btns(btns={"Да": "yes", "Отмена": "cancel"}))
         await state.set_state(AddChannel.approve)
 
@@ -154,9 +154,9 @@ async def check_channel(callback: CallbackQuery, session: AsyncSession, state: F
 
 
 @user_router.callback_query(F.data.startswith("channel_"))
-async def channel_chosen(callback: CallbackQuery, session: AsyncSession):
+async def channel_chosen(callback: CallbackQuery):
     channel_id = int(callback.data.split("_")[-1])
-    channel = await channel_info(session=session, channel_id=channel_id)
+    channel = await channel_info(channel_id=channel_id)
     btns = {
         "Создать пост": f"create_post_{channel_id}",
         "Удалить из бота": f"delete_channel_{channel_id}",
@@ -193,8 +193,8 @@ async def create_post(message: Message, session: AsyncSession):
         channels_str = ""
         btns = {}
         for channel in channels:
-            chat = await channel_info(session=session, channel_id=channel.channel_id)
-            channels_str += f"{await get_channel_hyperlink(session=session, channel_id=channel.channel_id)}\n"
+            chat = await channel_info(channel_id=channel.channel_id)
+            channels_str += f"{await get_channel_hyperlink(channel_id=channel.channel_id)}\n"
             btns[chat.title] = f"create_post_{channel.channel_id}"
         btns["Добавить канал/группу"] = "add_channel"
         await message.answer("<b>В какой канал делаем пост?</b>\n"
