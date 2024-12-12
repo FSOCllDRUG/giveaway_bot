@@ -34,7 +34,9 @@ async def is_bot_admin(chat_id: int) -> bool:
     try:
         chat = await bot.get_chat(chat_id)
         if chat.type == 'channel':
-            return chat.permissions.can_send_messages
+            admins = await bot.get_chat_administrators(chat_id)
+            bot_id = (await bot.get_me()).id
+            return any(admin.user.id == bot_id for admin in admins)
         else:
             bot_info = await bot.get_me()
             chat_member = await bot.get_chat_member(chat_id, bot_info.id)
