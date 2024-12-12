@@ -77,19 +77,43 @@ async def main_menu(message: Message):
 async def get_user_channels(message: Message, session: AsyncSession):
     user_id = message.from_user.id
     channels = await orm_get_channels_for_admin(session, user_id)
+
     if not channels:
-        await message.answer("У тебя нет каналов/групп 🫥",
-                             reply_markup=await get_callback_btns(btns={"Добавить канал/группу": "add_channel"}))
+        await message.answer(
+            "У тебя нет каналов/групп 🫥",
+            reply_markup=await get_callback_btns(btns={"Добавить канал/группу": "add_channel"})
+        )
         return
+
     channels_str = ""
     btns = {}
+    channels_to_remove = []
+
     for channel in channels:
         chat = await channel_info(channel_id=channel.channel_id)
-        channels_str += f"{await get_channel_hyperlink(channel_id=channel.channel_id)}\n"
-        btns[chat.title] = f"channel_{channel.channel_id}"
+        if chat:
+            channels_str += f"{await get_channel_hyperlink(channel_id=channel.channel_id)}\n"
+            btns[chat.title] = f"channel_{channel.channel_id}"
+        else:
+            channels_to_remove.append(channel.channel_id)
+
+    if channels_to_remove:
+        for channel_id in channels_to_remove:
+            await orm_delete_channel(session=session, channel_id=channel_id)
+        await message.answer(f"Некоторые каналы были удалены из-за проблем с доступом.")
+
     btns["Добавить канал/группу"] = "add_channel"
-    await message.answer(f"❗️<b>Ваши каналы:</b>\n{channels_str}",
-                         reply_markup=await get_callback_btns(btns=btns, sizes=(1,)))
+
+    if channels_str:
+        await message.answer(
+            f"❗️<b>Ваши каналы:</b>\n{channels_str}",
+            reply_markup=await get_callback_btns(btns=btns, sizes=(1,))
+        )
+    else:
+        await message.answer(
+            "Все ваши каналы были удалены из-за проблем с доступом. Добавьте новые каналы.",
+            reply_markup=await get_callback_btns(btns={"Добавить канал/группу": "add_channel"})
+        )
 
 
 class AddChannel(StatesGroup):

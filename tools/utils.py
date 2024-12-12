@@ -1,10 +1,9 @@
 from aiogram.types import Message
 from aiogram.exceptions import TelegramBadRequest
 from create_bot import bot, env_admins
-from db.pg_engine import session_maker
-from db.pg_orm_query import orm_delete_channel_and_association
-
-session = session_maker()
+# from db.pg_engine import session_maker
+#
+# session = session_maker()
 
 
 async def get_bot_link_to_start() -> str:
@@ -34,9 +33,7 @@ async def is_bot_admin(chat_id: int) -> bool:
     try:
         chat = await bot.get_chat(chat_id)
         if chat.type == 'channel':
-            admins = await bot.get_chat_administrators(chat_id)
-            bot_id = (await bot.get_me()).id
-            return any(admin.user.id == bot_id for admin in admins)
+            return True
         else:
             bot_info = await bot.get_me()
             chat_member = await bot.get_chat_member(chat_id, bot_info.id)
@@ -53,7 +50,7 @@ async def channel_info(channel_id: int):
         if am_i_admin:
             return chat
         else:
-            await orm_delete_channel_and_association(session=session, channel_id=channel_id)
+            return None
     except TelegramBadRequest as e:
         print(f"Error checking channel info: {e}")
         return None
