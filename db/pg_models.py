@@ -1,7 +1,7 @@
 import enum
 
 from sqlalchemy import BigInteger, String, Boolean, DateTime, func, ForeignKey, Table, Column, Text, Integer, ARRAY, \
-    Enum
+    Enum, Index
 from sqlalchemy.orm import DeclarativeBase, Mapped, mapped_column, relationship
 
 
@@ -37,6 +37,11 @@ class User(Base):
         back_populates="admins"
     )
 
+    __table_args__ = (
+        Index('idx_user_user_id', 'user_id'),
+        Index('idx_user_mailing', 'mailing'),
+    )
+
 
 class Channel(Base):
     __tablename__ = "Channels"
@@ -48,6 +53,10 @@ class Channel(Base):
         "User",
         secondary=user_channel_association,
         back_populates="channels"
+    )
+
+    __table_args__ = (
+        Index('idx_channel_channel_id', 'channel_id'),
     )
 
 
@@ -80,3 +89,9 @@ class Giveaway(Base):
     status: Mapped[GiveawayStatus] = mapped_column(Enum(GiveawayStatus), default=GiveawayStatus.NOT_PUBLISHED)
     user_id: Mapped[int] = mapped_column(ForeignKey("Users.user_id"), nullable=False)
     creator: Mapped["User"] = relationship("User", back_populates="giveaways")
+
+    __table_args__ = (
+        Index('idx_giveaway_user_id', 'user_id'),
+        Index('idx_giveaway_status', 'status'),
+        Index('idx_giveaway_post_datetime', 'post_datetime'),
+    )
