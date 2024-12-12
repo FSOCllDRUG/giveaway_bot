@@ -1,8 +1,10 @@
 from aiogram.types import Message
 from aiogram.exceptions import TelegramForbiddenError, TelegramBadRequest
 from create_bot import bot, env_admins
+from db.pg_engine import session_maker
 from db.pg_orm_query import orm_delete_channel_and_association
-from tools.giveaway_scheduler import session
+
+session = session_maker()
 
 
 async def get_bot_link_to_start() -> str:
