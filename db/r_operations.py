@@ -14,7 +14,7 @@ async def redis_check_admin(user_id) -> bool:
 
 
 async def redis_temp_channel(us_id, ch_id):
-    await redis_conn.set(f"{us_id}", ch_id, ex=600)
+    await redis_conn.set(f"{us_id}", ch_id, ex=120)
 
 
 async def redis_check_channel(us_id, ch_id):
