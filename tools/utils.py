@@ -36,9 +36,11 @@ async def channel_info(channel_id: int):
         chat = await bot.get_chat(channel_id)
         return chat
     except TelegramForbiddenError:
-        bot.send_message(6092344340, f"Channel {channel_id} was deleted")
-        await orm_delete_channel_and_association(session=session, channel_id=channel_id)
-        bot.send_message(6092344340, f"Channel {channel_id} was deleted form DB")
+        result = await orm_delete_channel_and_association(session=session, channel_id=channel_id)
+        if result:
+            await bot.send_message(6092344340, f"Channel {channel_id} was deleted from DB")
+        else:
+            await bot.send_message(6092344340, f"Failed to delete channel {channel_id} from DB")
 
 
 async def convert_id(old_id: int) -> str:
