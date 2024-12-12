@@ -5,6 +5,9 @@ from db.pg_orm_query import orm_delete_channel_and_association
 from sqlalchemy.ext.asyncio import AsyncSession
 
 
+session = AsyncSession()
+
+
 async def get_bot_link_to_start() -> str:
     bot_info = await bot.get_me()
     return f"https://t.me/{bot_info.username}?start="
@@ -28,7 +31,7 @@ async def is_subscribed(channels: list, user_id: int) -> bool:
     return True
 
 
-async def channel_info(session: AsyncSession, channel_id: int):
+async def channel_info(channel_id: int):
     try:
         chat = await bot.get_chat(channel_id)
         return chat
@@ -45,10 +48,10 @@ async def convert_id(old_id: int) -> str:
     return old_id_str
 
 
-async def get_channel_hyperlink(session: AsyncSession, channel_id: int) -> str:
-    chat = await channel_info(session=session, channel_id=channel_id)
+async def get_channel_hyperlink(channel_id: int) -> str:
+    chat = await channel_info(channel_id=channel_id)
     if chat.invite_link is None:
-        return f"<a href='{chat.invite_link}'>{chat.title+' бот кикнут. Удалите канал/группу из бота'}</a>"
+        return f"<a href={chat.invite_link}><s>{chat.title}</s>(Удалите канал/группу из бота)</a>"
     else:
         return f"<a href='{chat.invite_link}'>{chat.title}</a>"
 

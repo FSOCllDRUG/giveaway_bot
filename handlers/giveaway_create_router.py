@@ -19,7 +19,6 @@ from tools.giveaway_utils import get_giveaway_preview, get_channel_hyperlink, \
 from tools.texts import datetime_example, captcha_on_text, captcha_off_text
 from tools.utils import channel_info
 
-
 giveaway_create_router = Router()
 giveaway_create_router.message.filter(ChatType("private"))
 
@@ -176,7 +175,7 @@ async def create_giveaway_own_button(message: Message, state: FSMContext):
 async def create_giveaway_sponsor_channels(message: Message, state: FSMContext):
     if message.forward_from_chat:
         channel_id = message.forward_from_chat.id
-        chat_info = await channel_info(channel_id)
+        chat_info = await channel_info(channel_id=channel_id)
 
         try:
             chat = await bot.get_chat(channel_id)
@@ -309,11 +308,11 @@ async def create_giveaway_channel_id(callback: CallbackQuery, state: FSMContext)
     text = ""
     text += "<b>Условия участия:</b>\n\n"
     if "sponsor_channels" not in data or data["channel_id"] not in data["sponsor_channels"]:
-        channel = await channel_info(data["channel_id"])
+        channel = await channel_info(channel_id=data["channel_id"])
         text += f"✅ Подпишись на <a href='{channel.invite_link}'>{channel.title}</a>\n"
     if "sponsor_channels" in data:
         for channel in data["sponsor_channels"]:
-            channel = await channel_info(channel)
+            channel = await channel_info(channel_id=channel)
             text += f"✅ Подпишись на <a href='{channel.invite_link}'>{channel.title}</a>\n"
     # text += "\nНажми на прикрепленную к посту кнопку👇🏻\n\n\n"
     await callback.message.answer(f"Сейчас блок условий выглядит так:\n{text}")

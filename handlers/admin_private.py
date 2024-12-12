@@ -149,7 +149,7 @@ async def confirm_mailing(callback: CallbackQuery, state: FSMContext, session: A
 async def change_required_status(callback: CallbackQuery, session: AsyncSession):
     await callback.answer("")
     channel_id = int(callback.data.split("_")[-1])
-    channel = await channel_info(channel_id)
+    channel = await channel_info(channel_id=channel_id)
     required = await orm_is_required_channel(session, channel_id)
     print(type(required))
     print(required)
@@ -170,7 +170,7 @@ async def change_required_status(callback: CallbackQuery, session: AsyncSession)
     status = str(callback.data.split("_")[-1])
     print(type(status))
     print(status)
-    channel = await channel_info(channel_id)
+    channel = await channel_info(channel_id=channel_id)
     if status == "True":
         required = False
     else:
