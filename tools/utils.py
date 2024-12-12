@@ -2,10 +2,7 @@ from aiogram.types import Message
 from aiogram.exceptions import TelegramForbiddenError, TelegramBadRequest
 from create_bot import bot, env_admins
 from db.pg_orm_query import orm_delete_channel_and_association
-from sqlalchemy.ext.asyncio import AsyncSession
-
-
-session = AsyncSession()
+from tools.giveaway_scheduler import session
 
 
 async def get_bot_link_to_start() -> str:
@@ -51,13 +48,11 @@ async def channel_info(channel_id: int):
     if am_i_admin:
         return chat
     else:
-        await orm_delete_channel_and_association(session=session, channel_id=channel_id)
-    # except TelegramForbiddenError:
-    #     result = await orm_delete_channel_and_association(session=session, channel_id=channel_id)
-    #     if result:
-    #         await bot.send_message(6092344340, f"Channel {channel_id} was deleted from DB")
-    #     else:
-    #         await bot.send_message(6092344340, f"Failed to delete channel {channel_id} from DB")
+        result = await orm_delete_channel_and_association(session=session, channel_id=channel_id)
+        if result:
+            await bot.send_message(6092344340, f"Channel {channel_id} was deleted from DB")
+        else:
+            await bot.send_message(6092344340, f"Failed to delete channel {channel_id} from DB")
 
 
 async def convert_id(old_id: int) -> str:
