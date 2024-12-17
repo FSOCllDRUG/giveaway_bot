@@ -8,7 +8,7 @@ from db.pg_models import GiveawayStatus
 from db.pg_orm_query import orm_get_giveaway_by_id
 from db.r_operations import redis_get_participants_count, redis_add_participant
 from keyboards.inline import get_callback_btns
-from tools.texts import encode_giveaway_id
+from tools.texts import encode_giveaway_id, channel_conditions_text
 from tools.utils import channel_info, get_bot_link_to_start, convert_id, get_channel_hyperlink
 
 
@@ -32,11 +32,11 @@ async def get_giveaway_preview(data: dict, user_id: int = None, bot=None):
     text += "\n\n<b>Условия участия:</b>\n\n"
     if "sponsor_channels" not in data or data["channel_id"] not in data["sponsor_channels"]:
         channel = await channel_info(channel_id=data["channel_id"])
-        text += f"✅ Подпишись на <a href='{channel.invite_link}'>{channel.title}</a>\n"
+        text += await channel_conditions_text(channel)
     if "sponsor_channels" in data:
         for channel in data["sponsor_channels"]:
             channel = await channel_info(channel_id=channel)
-            text += f"✅ Подпишись на <a href='{channel.invite_link}'>{channel.title}</a>\n"
+            text += await channel_conditions_text(channel)
     if "extra_conditions" in data:
         text += f'{data["extra_conditions"]}\n\n'
     if "end_datetime" in data:
@@ -74,12 +74,12 @@ async def post_giveaway(giveaway):
 
     if not giveaway.sponsor_channel_ids or giveaway.channel_id not in giveaway.sponsor_channel_ids:
         channel = await channel_info(channel_id=giveaway.channel_id)
-        text += f"✅ Подпишись на <a href='{channel.invite_link}'>{channel.title}</a>\n"
+        text += await channel_conditions_text(channel)
 
     if giveaway.sponsor_channel_ids:
         for channel_id in giveaway.sponsor_channel_ids:
             channel = await channel_info(channel_id=channel_id)
-            text += f"✅ Подпишись на <a href='{channel.invite_link}'>{channel.title}</a>\n"
+            text += await channel_conditions_text(channel)
 
     if giveaway.extra_conditions:
         text += f"\n{giveaway.extra_conditions}\n\n"
@@ -193,12 +193,12 @@ async def get_giveaway_post(giveaway, user_id):
 
     if not giveaway.sponsor_channel_ids or giveaway.channel_id not in giveaway.sponsor_channel_ids:
         channel = await channel_info(channel_id=giveaway.channel_id)
-        text += f"✅ Подпишись на <a href='{channel.invite_link}'>{channel.title}</a>\n"
+        text += await channel_conditions_text(channel)
 
     if giveaway.sponsor_channel_ids:
         for channel_id in giveaway.sponsor_channel_ids:
             channel = await channel_info(channel_id=channel_id)
-            text += f"✅ Подпишись на <a href='{channel.invite_link}'>{channel.title}</a>\n"
+            text += await channel_conditions_text(channel)
 
     if giveaway.extra_conditions:
         text += f"\n{giveaway.extra_conditions}\n\n"

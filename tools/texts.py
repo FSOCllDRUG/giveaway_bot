@@ -85,3 +85,11 @@ async def format_giveaways_for_admin(giveaways):
         }.get(status, "❓")
         formatted_giveaways.append(f"{status_icon} /usergive{giveaway_id} {clean_text}")
     return formatted_giveaways
+
+
+async def channel_conditions_text(channel) -> str:
+    if channel.invite_link:
+        text = f"✅ Подпишись на <a href='{channel.invite_link}'>{channel.title}</a>\n"
+    else:
+        text = f"✅ Подпишись на {channel.title}(бота удалили из канала)\n"
+    return text
