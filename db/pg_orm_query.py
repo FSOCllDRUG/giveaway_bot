@@ -1,4 +1,3 @@
-import asyncio
 from datetime import datetime
 from typing import Optional
 
@@ -147,8 +146,10 @@ async def orm_delete_admin(session: AsyncSession, user_id: int):
 async def orm_get_admin_in_channel(session: AsyncSession, channel_id: int):
     query = select(User.user_id).join(user_channel_association).where(user_channel_association.c.channel_id == channel_id)
     result = await session.execute(query)
-    await session.close()
-    return result.scalar()
+    if result:
+        return result.scalar()
+    else:
+        return None
 
 
 async def orm_get_required_channels(session: AsyncSession):
