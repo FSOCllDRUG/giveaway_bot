@@ -144,11 +144,11 @@ async def orm_delete_admin(session: AsyncSession, user_id: int):
     await session.close()
 
 
-async def orm_get_admins_in_channel(session: AsyncSession, channel_id: int):
-    query = select(User).join(user_channel_association).where(user_channel_association.c.channel_id == channel_id)
+async def orm_get_admin_in_channel(session: AsyncSession, channel_id: int):
+    query = select(User.user_id).join(user_channel_association).where(user_channel_association.c.channel_id == channel_id)
     result = await session.execute(query)
     await session.close()
-    return result.scalars().all()
+    return result.scalar()
 
 
 async def orm_get_required_channels(session: AsyncSession):
