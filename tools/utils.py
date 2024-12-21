@@ -1,3 +1,5 @@
+import re
+
 from aiogram.exceptions import TelegramBadRequest
 from aiogram.types import Message
 
@@ -72,10 +74,8 @@ async def channel_info(channel_id: int):
     chat = await bot.get_chat(channel_id)
     if chat.invite_link is not None:
         return chat
-    # else:
-    #     print(f"###\nBot is not admin in channel {channel_id}\n###")
-    #     await del_channel_and_giveaways(channel_id)
-    #     print(f"###\nDeleted channel {channel_id}\n###")
+    else:
+        return None
 
 
 async def not_admin(chat_id: int, user_id: int = None):
@@ -93,3 +93,9 @@ async def not_admin(chat_id: int, user_id: int = None):
         await orm_delete_channel(session, chat_id)
     except Exception as e:
         print(e)
+
+
+async def remove_premium_emoji_tags(text: str) -> str:
+    pattern = r'<tg-emoji emoji-id="\d+">([^<]+)</tg-emoji>'
+    cleaned_text = re.sub(pattern, r'\1', text)
+    return cleaned_text

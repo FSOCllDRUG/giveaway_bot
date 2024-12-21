@@ -17,7 +17,7 @@ from keyboards.inline import get_callback_btns, captcha_toggle
 from tools.giveaway_utils import get_giveaway_preview, get_channel_hyperlink, \
     get_giveaway_info_text
 from tools.texts import datetime_example, captcha_on_text, captcha_off_text
-from tools.utils import channel_info
+from tools.utils import channel_info, remove_premium_emoji_tags
 
 giveaway_create_router = Router()
 giveaway_create_router.message.filter(ChatType("private"))
@@ -101,10 +101,10 @@ async def create_giveaway_message(message: Message, state: FSMContext):
     if media_id is not None:
         await state.update_data(media=media_id)
     if message.text:
-        text = message.html_text
+        text = await remove_premium_emoji_tags(message.html_text)
         await message.answer("✅ Текст успешно добавлен!")
     elif message.caption:
-        text = message.html_text
+        text = await remove_premium_emoji_tags(message.html_text)
         await message.answer("✅ Текст успешно добавлен!")
     else:
         text = ""
@@ -314,7 +314,6 @@ async def create_giveaway_channel_id(callback: CallbackQuery, state: FSMContext)
         for channel in data["sponsor_channels"]:
             channel = await channel_info(channel_id=channel)
             text += f"✅ Подпишись на <a href='{channel.invite_link}'>{channel.title}</a>\n"
-    # text += "\nНажми на прикрепленную к посту кнопку👇🏻\n\n\n"
     await callback.message.answer(f"Сейчас блок условий выглядит так:\n{text}")
     await callback.message.answer("<b>❗️ВАЖНО</b>:\n"
                                   "<i>При выборе победителей</i>\n"
