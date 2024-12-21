@@ -1,6 +1,7 @@
 import base64
 import datetime
 import re
+from types import NoneType
 
 import pytz
 
@@ -88,7 +89,7 @@ async def format_giveaways_for_admin(giveaways):
 
 
 async def channel_conditions_text(channel) -> str:
-    if channel.invite_link:
+    if channel != NoneType:
         text = f"✅ Подпишись на <a href='{channel.invite_link}'>{channel.title}</a>\n"
     else:
         text = f"✅ Подпишись на {channel.title}(бота удалили из канала)\n"
