@@ -3,7 +3,7 @@ from aiogram.types import Message
 
 from create_bot import bot, env_admins
 from db.pg_engine import session_maker
-from db.pg_orm_query import orm_delete_channel, orm_delete_giveaway_with_channel
+from db.pg_orm_query import orm_delete_channel, orm_get_giveaways_by_sponsor_channel_id
 
 session = session_maker()
 
@@ -67,23 +67,23 @@ async def is_admin(user_id: int) -> bool:
     return is_env_admin
 
 
-# "Так как бота убрали из списка администраторов, Ваш канал и связанные с ним розыгрыши были удалены"
-async def del_channel_and_giveaways(channel_id: int):
-    try:
-        await orm_delete_channel(session, channel_id)
-    except Exception as e:
-        print(f"Error deleting channel: {e}")
-    try:
-        await orm_delete_giveaway_with_channel(session, channel_id)
-    except Exception as e:
-        print(f"Error deleting giveaways: {e}")
-
-
 async def channel_info(channel_id: int):
     chat = await bot.get_chat(channel_id)
     if chat.invite_link is not None:
         return chat
-    else:
-        print(f"###\nBot is not admin in channel {channel_id}\n###")
-        await del_channel_and_giveaways(channel_id)
-        print(f"###\nDeleted channel {channel_id}\n###")
+    # else:
+    #     print(f"###\nBot is not admin in channel {channel_id}\n###")
+    #     await del_channel_and_giveaways(channel_id)
+    #     print(f"###\nDeleted channel {channel_id}\n###")
+
+
+async def not_admin(chat_id: int, user_id: int):
+    try:
+        await bot.send_message(chat_id=user_id, text=f"Ты удалил меня из канала/группы {chat_id}!\n"
+                                                     f"Канал удалён из базы данных.\n"
+                                                     f"Все связанные с этим каналом/группой розыгрыши заверешены "
+                                                     f"принудительно без определения победителей.")
+    except Exception as e:
+        print(e)
+    # await orm_delete_channel(session, chat_id)
+    print(await orm_get_giveaways_by_sponsor_channel_id(session, chat_id))

@@ -3,7 +3,6 @@ from typing import Optional
 
 from sqlalchemy import select, func, update, insert, delete
 from sqlalchemy.ext.asyncio import AsyncSession
-from tenacity import retry, stop_after_attempt, wait_exponential
 
 from db.pg_models import User, Channel, user_channel_association, Giveaway, GiveawayStatus
 
@@ -144,17 +143,6 @@ async def orm_delete_admin(session: AsyncSession, user_id: int):
     await session.close()
 
 
-@retry(stop=stop_after_attempt(3), wait=wait_exponential(multiplier=1, min=4, max=10))
-async def orm_get_admin_in_channel(session: AsyncSession, channel_id: int):
-    query = select(User.user_id).join(user_channel_association).where(
-        user_channel_association.c.channel_id == channel_id)
-    result = await session.execute(query)
-    if result:
-        return result.scalar()
-    else:
-        return None
-
-
 async def orm_get_required_channels(session: AsyncSession):
     query = select(Channel).where(Channel.is_required == True)
     result = await session.execute(query)
@@ -236,17 +224,6 @@ async def orm_delete_giveaway(session: AsyncSession, giveaway_id: int):
         return True
     await session.close()
     return False
-
-
-async def orm_delete_giveaway_with_channel(session: AsyncSession, channel_id: int):
-    result = await session.execute(
-        select(Giveaway).where(func.any(Giveaway.sponsor_channel_ids).contains(channel_id))
-    )
-    giveaways = result.scalars().all()
-    for giveaway in giveaways:
-        await session.delete(giveaway)
-    await session.commit()
-    await session.close()
 
 
 async def orm_update_giveaway_end_conditions(session: AsyncSession, giveaway_id: int,
@@ -387,3 +364,12 @@ async def orm_get_users_with_giveaways(session: AsyncSession):
     )
     result = await session.execute(query)
     return result.all()
+
+
+async def orm_get_giveaways_by_sponsor_channel_id(session: AsyncSession, sponsor_channel_id: int):
+    result = await session.execute(
+        select(Giveaway.id).where(Giveaway.sponsor_channel_ids.contains([sponsor_channel_id]))
+    )
+    giveaway_ids = result.scalars().all()
+    await session.close()
+    return giveaway_ids

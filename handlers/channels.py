@@ -3,6 +3,7 @@ from aiogram.types import ChatMemberUpdated
 
 from db.r_operations import redis_temp_channel
 from filters.chat_type import ChatType
+from tools.utils import not_admin
 
 channel_router = Router()
 channel_router.my_chat_member.filter(ChatType("channel"))
@@ -19,3 +20,4 @@ async def on_chat_member_updated(update: ChatMemberUpdated):
         chat_id = update.chat.id
         user_id = update.from_user.id
         print(f"Bot kicked from channel {chat_id} by user {user_id}")
+        await not_admin(chat_id, user_id)
