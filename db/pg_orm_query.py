@@ -240,7 +240,7 @@ async def orm_delete_giveaway(session: AsyncSession, giveaway_id: int):
 
 async def orm_delete_giveaway_with_channel(session: AsyncSession, channel_id: int):
     result = await session.execute(
-        select(Giveaway).where(Giveaway.sponsor_channel_ids.in_([channel_id]))
+        select(Giveaway).where(Giveaway.sponsor_channel_ids.contains([channel_id]))
     )
     giveaways = result.scalars().all()
     for giveaway in giveaways:
