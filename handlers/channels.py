@@ -19,6 +19,5 @@ async def on_chat_member_updated(update: ChatMemberUpdated):
     if update.new_chat_member.status == 'left':
         chat_id = update.chat.id
         user_id = update.from_user.id
-        print(str(update))
         print(f"Bot kicked from channel {chat_id} by user {user_id}")
-        await not_admin(chat_id, user_id=None)
+        await not_admin(chat_id, user_id)

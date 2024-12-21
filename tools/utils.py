@@ -79,14 +79,12 @@ async def channel_info(channel_id: int):
 
 async def not_admin(chat_id: int, user_id: int = None):
     try:
-        if user_id is not None:
-            await bot.send_message(chat_id=user_id, text=f"Ты удалил меня из канала/группы {chat_id}!\n"
-                                                         f"Канал удалён из базы данных.\n"
-                                                         f"Все связанные с этим каналом/группой розыгрыши заверешены "
-                                                         f"принудительно без определения победителей.")
+        await bot.send_message(chat_id=user_id, text=f"Ты удалил меня из канала/группы {chat_id}!\n"
+                                                     f"Канал удалён из базы данных.\n"
+                                                     f"Все связанные с этим каналом/группой розыгрыши заверешены "
+                                                     f"принудительно без определения победителей.")
     except Exception as e:
         print(e)
-    # await orm_delete_channel(session, chat_id)
     try:
         print(await orm_get_giveaways_by_sponsor_channel_id(session, chat_id))
     except Exception as e:

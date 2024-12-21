@@ -366,9 +366,9 @@ async def orm_get_users_with_giveaways(session: AsyncSession):
     return result.all()
 
 
-async def orm_get_giveaways_by_sponsor_channel_id(session: AsyncSession, sponsor_channel_id: int):
+async def orm_get_giveaways_by_sponsor_channel_id(session: AsyncSession, channel_id: int):
     result = await session.execute(
-        select(Giveaway.id).where(Giveaway.sponsor_channel_ids.contains([sponsor_channel_id]))
+        select(Giveaway.id).where(func.array_contains(Giveaway.sponsor_channel_ids, channel_id))
     )
     giveaway_ids = result.scalars().all()
     await session.close()
