@@ -1,7 +1,7 @@
 from datetime import datetime
 from typing import Optional
 
-from sqlalchemy import select, func, update, insert, delete
+from sqlalchemy import select, func, update, insert, delete, any_
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from db.pg_models import User, Channel, user_channel_association, Giveaway, GiveawayStatus
@@ -368,7 +368,7 @@ async def orm_get_users_with_giveaways(session: AsyncSession):
 
 async def orm_get_giveaways_by_sponsor_channel_id(session: AsyncSession, channel_id: int):
     result = await session.execute(
-        select(Giveaway.id).where(func.array_contains(Giveaway.sponsor_channel_ids, channel_id))
+        select(Giveaway.id).where(channel_id == any_(Giveaway.sponsor_channel_ids))
     )
     giveaway_ids = result.scalars().all()
     await session.close()
