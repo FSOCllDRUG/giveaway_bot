@@ -234,6 +234,17 @@ async def orm_delete_giveaway(session: AsyncSession, giveaway_id: int):
     return False
 
 
+async def orm_delete_giveaway_with_channel(session: AsyncSession, channel_id: int):
+    result = await session.execute(
+        select(Giveaway).where(Giveaway.sponsor_channel_ids.contains([channel_id]))
+    )
+    giveaways = result.scalars().all()
+    for giveaway in giveaways:
+        await session.delete(giveaway)
+    await session.commit()
+    await session.close()
+
+
 async def orm_update_giveaway_end_conditions(session: AsyncSession, giveaway_id: int,
                                              end_datetime: Optional[str], end_count: Optional[int]):
     result = await session.execute(

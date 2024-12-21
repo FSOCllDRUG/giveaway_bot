@@ -1,8 +1,9 @@
-from aiogram.types import Message
 from aiogram.exceptions import TelegramBadRequest
+from aiogram.types import Message
+
 from create_bot import bot, env_admins
 from db.pg_engine import session_maker
-from db.pg_orm_query import orm_delete_channel
+from db.pg_orm_query import orm_delete_channel, orm_delete_giveaway_with_channel, orm_get_admins_in_channel
 
 session = session_maker()
 
@@ -44,23 +45,6 @@ async def is_bot_admin(chat_id: int) -> bool:
         return False
 
 
-async def channel_info(channel_id: int):
-    try:
-        chat = await bot.get_chat(channel_id)
-        if chat.invite_link is not None:
-            return chat
-        else:
-            print(f"###\nBot is not admin in channel {channel_id}\n###")
-            try:
-                await orm_delete_channel(session, channel_id)
-            except Exception as e:
-                print(f"Error deleting channel: {e}")
-            return None
-    except TelegramBadRequest as e:
-        print(f"Error checking channel info: {e}")
-        return None
-
-
 async def convert_id(old_id: int) -> str:
     old_id_str = str(old_id)
     if old_id_str.startswith("-100"):
@@ -81,3 +65,34 @@ async def get_channel_hyperlink(channel_id: int) -> str:
 async def is_admin(user_id: int) -> bool:
     is_env_admin = user_id in env_admins
     return is_env_admin
+
+
+# "Так как бота убрали из списка администраторов, Ваш канал и связанные с ним розыгрыши были удалены"
+async def del_channel_and_giveaways(channel_id: int):
+    try:
+        await orm_delete_channel(session, channel_id)
+    except Exception as e:
+        print(f"Error deleting channel: {e}")
+    try:
+        await orm_delete_giveaway_with_channel(session, channel_id)
+    except Exception as e:
+        print(f"Error deleting giveaways: {e}")
+
+
+async def channel_info(channel_id: int):
+    try:
+        chat = await bot.get_chat(channel_id)
+        if chat.invite_link is not None:
+            return chat
+        else:
+            print(f"###\nBot is not admin in channel {channel_id}\n###")
+            admin = await orm_get_admins_in_channel(session, channel_id)
+            await bot.send_message(chat_id=admin.user_id,
+                                   text="Так как бота убрали из списка администраторов, Ваш канал и связанные с ним "
+                                        "розыгрыши были удалены")
+            print(f"Message sent to {admin}")
+            await del_channel_and_giveaways(channel_id)
+            print(f"###\nDeleted channel {channel_id}\n###")
+    except TelegramBadRequest as e:
+        print(f"Error checking channel info: {e}")
+        return None
