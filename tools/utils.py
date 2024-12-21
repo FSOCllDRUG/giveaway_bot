@@ -3,7 +3,8 @@ from aiogram.types import Message
 
 from create_bot import bot, env_admins
 from db.pg_engine import session_maker
-from db.pg_orm_query import orm_get_giveaways_by_sponsor_channel_id
+from db.pg_models import GiveawayStatus
+from db.pg_orm_query import orm_get_giveaways_by_sponsor_channel_id, orm_update_giveaway_status, orm_delete_channel
 
 session = session_maker()
 
@@ -86,6 +87,9 @@ async def not_admin(chat_id: int, user_id: int = None):
     except Exception as e:
         print(e)
     try:
-        print(await orm_get_giveaways_by_sponsor_channel_id(session, chat_id))
+        giveaways_ids = await orm_get_giveaways_by_sponsor_channel_id(session, chat_id)
+        for giveaway in giveaways_ids:
+            await orm_update_giveaway_status(session, giveaway, GiveawayStatus.FINISHED)
+        await orm_delete_channel(session, chat_id)
     except Exception as e:
         print(e)
