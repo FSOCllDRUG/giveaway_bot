@@ -3,6 +3,7 @@ from typing import Optional
 
 from sqlalchemy import select, func, update, insert, delete
 from sqlalchemy.ext.asyncio import AsyncSession
+from tenacity import retry, stop_after_attempt, wait_exponential
 
 from db.pg_models import User, Channel, user_channel_association, Giveaway, GiveawayStatus
 
@@ -143,6 +144,7 @@ async def orm_delete_admin(session: AsyncSession, user_id: int):
     await session.close()
 
 
+@retry(stop=stop_after_attempt(3), wait=wait_exponential(multiplier=1, min=4, max=10))
 async def orm_get_admin_in_channel(session: AsyncSession, channel_id: int):
     query = select(User.user_id).join(user_channel_association).where(
         user_channel_association.c.channel_id == channel_id)

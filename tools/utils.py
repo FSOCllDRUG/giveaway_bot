@@ -112,6 +112,4 @@ async def channel_info(channel_id: int):
         print(f"Message sent to {admin}")
         await del_channel_and_giveaways(channel_id)
         print(f"###\nDeleted channel {channel_id}\n###")
-        # except TelegramBadRequest as e:
-        #     print(f"Error checking channel info: {e}")
         return None
