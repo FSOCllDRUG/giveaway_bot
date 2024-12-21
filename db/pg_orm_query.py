@@ -144,7 +144,8 @@ async def orm_delete_admin(session: AsyncSession, user_id: int):
 
 
 async def orm_get_admin_in_channel(session: AsyncSession, channel_id: int):
-    query = select(User.user_id).join(user_channel_association).where(user_channel_association.c.channel_id == channel_id)
+    query = select(User.user_id).join(user_channel_association).where(
+        user_channel_association.c.channel_id == channel_id)
     result = await session.execute(query)
     if result:
         return result.scalar()
@@ -237,7 +238,7 @@ async def orm_delete_giveaway(session: AsyncSession, giveaway_id: int):
 
 async def orm_delete_giveaway_with_channel(session: AsyncSession, channel_id: int):
     result = await session.execute(
-        select(Giveaway).where(Giveaway.sponsor_channel_ids.contains([channel_id]))
+        select(Giveaway).where(Giveaway.sponsor_channel_ids.in_([channel_id]))
     )
     giveaways = result.scalars().all()
     for giveaway in giveaways:
@@ -384,4 +385,3 @@ async def orm_get_users_with_giveaways(session: AsyncSession):
     )
     result = await session.execute(query)
     return result.all()
-
