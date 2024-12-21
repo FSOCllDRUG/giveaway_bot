@@ -44,7 +44,7 @@ async def channel_info(channel_id: int):
         if chat.invite_link is not None:
             return chat
         else:
-            print(f"Bot is not admin in channel {channel_id}")
+            print(f"###\nBot is not admin in channel {channel_id}\n###")
             return None
     except TelegramBadRequest as e:
         print(f"Error checking channel info: {e}")

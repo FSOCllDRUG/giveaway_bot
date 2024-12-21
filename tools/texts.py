@@ -89,8 +89,8 @@ async def format_giveaways_for_admin(giveaways):
 
 
 async def channel_conditions_text(channel) -> str:
-    if channel != NoneType:
+    if channel is not None:
         text = f"✅ Подпишись на <a href='{channel.invite_link}'>{channel.title}</a>\n"
     else:
-        text = f"✅ Подпишись на {channel.title}(бота удалили из канала)\n"
+        text = f"✅ Подпишись на (бота удалили из канала)\n"
     return text
