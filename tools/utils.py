@@ -3,8 +3,7 @@ from aiogram.types import Message
 
 from create_bot import bot, env_admins
 from db.pg_engine import session_maker
-from db.pg_orm_query import orm_delete_channel, orm_delete_giveaway_with_channel, orm_get_admins_in_channel, \
-    orm_get_admin_in_channel
+from db.pg_orm_query import orm_delete_channel, orm_delete_giveaway_with_channel, orm_get_admin_in_channel
 
 session = session_maker()
 
@@ -92,8 +91,8 @@ async def channel_info(channel_id: int):
             print(type(admin))
             try:
                 await bot.send_message(chat_id=admin,
-                                   text="Так как бота убрали из списка администраторов, Ваш канал и связанные с ним "
-                                        "розыгрыши были удалены")
+                                       text="Так как бота убрали из списка администраторов, Ваш канал и связанные с ним "
+                                            "розыгрыши были удалены")
             except Exception as e:
                 print(f"Error sending message to admin: {e}")
             print(f"Message sent to {admin}")
