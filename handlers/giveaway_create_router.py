@@ -386,7 +386,7 @@ async def set_giveaway_post_datetime(message: Message, state: FSMContext):
             await message.answer("❌ Дата и время должны быть не раньше чем через 5 минут от текущего времени!")
             return
 
-        await state.update_data(post_datetime=user_datetime.isoformat())
+        await state.update_data(post_datetime=user_datetime.replace(tzinfo=None).isoformat())
         await message.answer("✅ Время для публикации розыгрыша сохранено!")
         await state.set_state(CreateGiveaway.end_datetime)
         await message.answer("⌛️Как закончить розыгрыш?",
