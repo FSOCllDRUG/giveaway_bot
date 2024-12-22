@@ -16,7 +16,7 @@ from filters.is_admin import IsAdmin
 from handlers.giveaway_interaction_router import status_mapping
 from keyboards.inline import get_callback_btns
 from keyboards.reply import get_keyboard, admin_kb
-from tools.giveaway_utils import get_giveaway_preview, get_giveaway_post
+from tools.giveaway_utils import get_giveaway_post
 from tools.mailing import simple_mailing
 from tools.texts import cbk_msg, format_giveaways_for_admin
 from tools.utils import msg_to_cbk, channel_info
@@ -193,7 +193,7 @@ async def get_users_giveaways(message: Message, session: AsyncSession):
 
     for user in users:
         user_text = (f"/user_{user.user_id} <a href='tg://user?id={user.user_id}'"
-                     f">{'@'+user.username if user.username else 'id'+user.user_id}</a>\n")
+                     f">{'@' + user.username if user.username else 'id' + user.user_id}</a>\n")
         if len(text) + len(user_text) > limit:
             messages.append(text)
             text = initial_text + user_text
