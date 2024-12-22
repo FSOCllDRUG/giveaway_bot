@@ -245,7 +245,7 @@ async def get_user_giveaway(message: Message, session: AsyncSession):
     post_datetime = giveaway.post_datetime.strftime('%d.%m.%Y %H:%M')
     await message.answer("Вот как выглядит пост розыгрыша:")
     if status == "⏳ Ждёт публикации":
-        await get_giveaway_preview(giveaway, message.from_user.id)
+        await get_giveaway_post(giveaway, message.from_user.id)
     if status == "✅ Опубликован" or status == "❌ Завершён":
         await get_giveaway_post(giveaway, message.from_user.id)
     text = (f"<b>Розыгрыш №</b>{giveaway_id}\n"
