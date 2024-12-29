@@ -71,7 +71,8 @@ async def start_join_giveaway(message: Message, command: CommandObject, session:
 
     if await is_subscribed(channels=sponsor_channels, user_id=user_id) == False:
         await message.answer(
-            f"Чтобы участвовать в розыгрыше, вам необходимо подписаться на все указанные в нём каналы.",
+            f"Чтобы участвовать в розыгрыше, <b><u>Вам необходимо подписаться</u></b> на все "
+            f"указанные каналы в условиях.",
             reply_markup=await main_kb(await is_admin(message.from_user.id)))
         return
 
