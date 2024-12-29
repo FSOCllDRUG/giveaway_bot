@@ -373,3 +373,14 @@ async def orm_get_giveaways_by_sponsor_channel_id(session: AsyncSession, channel
     giveaway_ids = result.scalars().all()
     await session.close()
     return giveaway_ids
+
+
+async def orm_get_top_giveaways_by_participants(session: AsyncSession):
+    result = await session.execute(
+        select(Giveaway).where(Giveaway.status == GiveawayStatus.FINISHED)
+        .order_by(Giveaway.participants_count.desc())
+        .limit(10)
+    )
+    top_giveaways = result.scalars().all()
+    await session.close()
+    return top_giveaways

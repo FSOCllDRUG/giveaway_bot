@@ -8,7 +8,8 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from create_bot import bot
 from db.pg_orm_query import orm_count_users, orm_get_mailing_list, orm_get_required_channels, orm_is_required_channel, \
-    orm_change_required_channel, orm_get_users_with_giveaways, orm_get_user_giveaways, orm_get_giveaway_by_id
+    orm_change_required_channel, orm_get_users_with_giveaways, orm_get_user_giveaways, orm_get_giveaway_by_id, \
+    orm_get_top_giveaways_by_participants
 from db.r_operations import (redis_set_mailing_users, redis_set_mailing_msg, redis_set_msg_from,
                              redis_set_mailing_btns, get_active_users_count, redis_get_participants_count)
 from filters.chat_type import ChatType
@@ -268,3 +269,26 @@ async def get_user_giveaway(message: Message, session: AsyncSession):
         btns.update({"Выбрать дополнительных победителей": f"add_winners_{giveaway_id}"})
     btns.update({"Удалить розыгрыш": f"delete_giveaway_{giveaway_id}"})
     await message.answer(text, reply_markup=await get_callback_btns(btns=btns, sizes=(1,)))
+
+
+@admin_private_router.message(F.text == "Топ законченных розыгрышей")
+async def get_top_finished_giveaways(message: Message, session: AsyncSession):
+    top_finished_giveaways = await orm_get_top_giveaways_by_participants(session=session)
+    if not top_finished_giveaways:
+        await message.answer("❌ На данный момент нет законченных розыгрышей!")
+        return
+    initial_text = "<b>🏆Топ законченных розыгрышей</b>\n\n"
+    text = initial_text
+    messages = []
+    limit = 4096
+    for giv in top_finished_giveaways:
+        giv_text = f"/usergive{giv.id} 👥<b>{giv.participants_count}</b>\n"
+        if len(text) + len(giv_text) > limit:
+            messages.append(text)
+            text = initial_text + giv_text
+        else:
+            text += giv_text
+
+    messages.append(text)
+    for msg in messages:
+        await message.answer(msg)
