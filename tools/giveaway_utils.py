@@ -1,5 +1,6 @@
 import datetime
 
+from aiogram.exceptions import TelegramBadRequest
 from aiogram.types import InlineKeyboardMarkup, InlineKeyboardButton
 from sqlalchemy.ext.asyncio import AsyncSession
 
@@ -141,7 +142,10 @@ async def update_button_text(session: AsyncSession, giveaway_id: int) -> InlineK
 async def update_giveaway_message(session: AsyncSession, giveaway_id: int, chat_id: int, message_id: int):
     buttons = await update_button_text(session, giveaway_id)
     if buttons:
-        await bot.edit_message_reply_markup(chat_id=chat_id, message_id=message_id, reply_markup=buttons)
+        try:
+            await bot.edit_message_reply_markup(chat_id=chat_id, message_id=message_id, reply_markup=buttons)
+        except TelegramBadRequest:
+            pass
 
 
 async def add_participant_and_update_button(session: AsyncSession, giveaway_id: int, user_id: int, chat_id: int,
