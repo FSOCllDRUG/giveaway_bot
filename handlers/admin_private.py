@@ -226,7 +226,6 @@ async def get_user_giveaways(message: Message, session: AsyncSession):
             text += giv_text
 
     messages.append(text)
-    print(text)
     for msg in messages:
         await message.answer(msg)
 

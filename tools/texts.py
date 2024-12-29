@@ -52,9 +52,9 @@ captcha_off_text = ("ℹ️ <i>Вы отключили капчу</i>❌\n"
                     "Теперь для участия в розыгрыше участникам не нужно решать графическую капчу.")
 
 
-async def remove_html_tags(text):
-    # Remove HTML tags
-    clean_text = re.sub(r"<.*?>", "", text)
+def remove_html_tags(text):
+    # Remove HTML tags and unfinished HTML tags
+    clean_text = re.sub(r"<.*?>|<.*", "", text)
     # Replace newlines and other whitespace characters with a single space
     clean_text = re.sub(r"\s+", " ", clean_text)
     return clean_text
