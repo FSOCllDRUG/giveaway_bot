@@ -123,9 +123,9 @@ async def create_giveaway_button(callback: CallbackQuery, state: FSMContext):
     await callback.answer("")
     join = int(callback.data.split("_")[-1])
     if join == 1:
-        button = "Учавствовать"
+        button = "Участвовать"
     elif join == 2:
-        button = "Учавствовать!"
+        button = "Участвую!"
     else:
         button = "Принять участие"
     await state.update_data(button=button)
