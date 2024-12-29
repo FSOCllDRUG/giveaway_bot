@@ -3,6 +3,7 @@ import datetime
 from random import shuffle
 
 import pytz
+from aiogram.exceptions import TelegramBadRequest
 
 from create_bot import bot
 from db.pg_engine import session_maker
@@ -77,8 +78,12 @@ async def publish_giveaway_results(giveaway_id):
 
         g_id = await encode_giveaway_id(giveaway.id)
         giveaway_end_text += f"\n\n<a href='{await get_bot_link_to_start()}checkgive_{g_id}'>Проверить результаты</a>"
-        message = await bot.send_message(reply_to_message_id=msg_id, chat_id=giveaway.channel_id,
-                                         text=giveaway_end_text)
+        try:
+            message = await bot.send_message(reply_to_message_id=msg_id, chat_id=giveaway.channel_id,
+                                             text=giveaway_end_text)
+        except TelegramBadRequest:
+            message = await bot.send_message(chat_id=giveaway.channel_id,
+                                             text=giveaway_end_text)
         await giveaway_result_notification(message, giveaway)
         await orm_update_giveaway_status(session, giveaway.id, GiveawayStatus.FINISHED)
         if winners:
