@@ -343,9 +343,11 @@ async def orm_get_giveaway_end_count(session: AsyncSession, giveaway_id: int) ->
     result = await session.execute(
         select(Giveaway.end_count).where(Giveaway.id == giveaway_id)
     )
-    end_count = int(result.scalar_one_or_none())
+    end_count = result.scalar_one_or_none()
     await session.close()
-    return end_count
+    if end_count is None:
+        return None
+    return int(end_count)
 
 
 async def orm_update_participants_count(session: AsyncSession, giveaway_id: int, participants_count: int):
