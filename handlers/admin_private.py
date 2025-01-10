@@ -250,7 +250,7 @@ async def get_user_giveaway(message: Message, session: AsyncSession):
         await get_giveaway_post(giveaway, message.from_user.id)
     text = (f"<b>Розыгрыш №</b>{giveaway_id}\n"
             f"<b>Создатель розыгрыша:</b> "
-            f"<a href='tg://user?id={giveaway.user_id}'>id{giveaway.user_id}</a>\n"
+            f"<a href='tg://user?id={giveaway.user_id}'>{giveaway.user_id}</a>\n"
             f"Статус: {status}\n"
             f"Сообщение с розыгрышем: <a href='{post_url}'>Ссылка</a>\n"
             f"Количество участников: {participants_count}\n"
@@ -305,3 +305,7 @@ async def get_top_finished_giveaways(message: Message, session: AsyncSession):
 #         return
 #     text = format_giveaways(active_giveaways)
 #     await message.answer(text)
+@admin_private_router.message(F.text.isdigit())
+async def test(message: Message):
+    id=message.text
+    await message.answer(f"<a href='tg://user?id={id}'>Юзер с id={id}</a>)
