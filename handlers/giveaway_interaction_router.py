@@ -22,7 +22,7 @@ from keyboards.inline import get_callback_btns
 from keyboards.reply import main_kb
 from tools.captcha import generate_captcha
 from tools.giveaway_scheduler import publish_giveaway_results
-from tools.giveaway_utils import add_participant_and_update_button, check_giveaway_text
+from tools.giveaway_utils import add_participant_to_redis, check_giveaway_text
 from tools.texts import decode_giveaway_id, format_giveaways, datetime_example, encode_giveaway_id
 from tools.utils import is_subscribed, get_bot_link_to_start, is_admin
 
@@ -88,7 +88,7 @@ async def start_join_giveaway(message: Message, command: CommandObject, session:
         await state.set_state(Captcha.awaiting_captcha)
         await state.update_data(giveaway_id=giveaway_id, chat_id=message.chat.id, message_id=message.message_id)
     else:
-        await add_participant_and_update_button(session, giveaway_id, user_id, giveaway.channel_id, giveaway.message_id)
+        await add_participant_to_redis(giveaway_id, user_id)
         await state.clear()
         await message.answer(f"🎉 <b>Поздравляем!</b>\n"
                              f"<b>Теперь Вы участник розыгрыша #{giveaway_id}!</b>",
@@ -138,12 +138,11 @@ async def check_captcha(message: Message, state: FSMContext, session: AsyncSessi
                              reply_markup=await main_kb(await is_admin(message.from_user.id)))
         data = await state.get_data()
         giveaway_id = data.get('giveaway_id')
-        giveaway = await orm_get_giveaway_by_id(session=session, giveaway_id=giveaway_id)
-        await add_participant_and_update_button(session, giveaway_id, user_id, giveaway.channel_id, giveaway.message_id)
+        await add_participant_to_redis(giveaway_id, user_id)
         await message.answer(f"🎉 <b>Поздравляем!</b>\n"
                              f"<b>Теперь Вы участник розыгрыша #{giveaway_id}!</b>")
         await state.clear()
-        await add_participant_and_update_button(session, giveaway_id, user_id, message.chat.id, message.message_id)
+        await add_participant_to_redis(giveaway_id, user_id)
         await redis_conn.delete(f"captcha:{user_id}")
         end_count = await orm_get_giveaway_end_count(session, giveaway_id)
         if end_count:

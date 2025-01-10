@@ -148,10 +148,8 @@ async def update_giveaway_message(session: AsyncSession, giveaway_id: int, chat_
             pass
 
 
-async def add_participant_and_update_button(session: AsyncSession, giveaway_id: int, user_id: int, chat_id: int,
-                                            message_id: int):
+async def add_participant_to_redis(giveaway_id: int, user_id: int):
     await redis_add_participant(giveaway_id, user_id)
-    await update_giveaway_message(session, giveaway_id, chat_id, message_id)
 
 
 async def check_giveaway_text(session: AsyncSession, giveaway_id: int) -> str:
