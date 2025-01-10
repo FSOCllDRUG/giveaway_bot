@@ -298,7 +298,7 @@ async def get_top_finished_giveaways(message: Message, session: AsyncSession):
         await message.answer(msg)
 
 
-@admin_private_router.message(F.text == "Активные розыгрыши")@admin_private_router.message(F.text == "Активные розыгрыши")
+@admin_private_router.message(F.text == "Активные розыгрыши")
 async def get_active_giveaways(message: Message, session: AsyncSession):
     active_giveaways = await orm_get_active_giveaways_w_participants(session=session)
     initial_text = f"<b>🏆Активные розыгрыши({len(active_giveaways)})</b>\n\n"
