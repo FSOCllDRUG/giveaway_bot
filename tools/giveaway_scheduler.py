@@ -40,6 +40,8 @@ async def publish_giveaway(giveaway_id):
 async def publish_giveaway_results(giveaway_id):
     giveaway = await orm_get_giveaway_by_id(session, giveaway_id)
     msg_id = giveaway.message_id
+    await update_giveaway_message(session, giveaway.id, giveaway.channel_id, giveaway.message_id)
+    await asyncio.sleep(1 / 20)
 
     if giveaway and giveaway.status != GiveawayStatus.FINISHED:
         # Получаем всех участников
@@ -111,6 +113,7 @@ async def schedule_giveaways():
 
         for giveaway in ready_for_results:
             await update_giveaway_message(session, giveaway.id, giveaway.channel_id, giveaway.message_id)
+            await asyncio.sleep(1 / 20)
             giveaway_end_datetime = giveaway.end_datetime.replace(tzinfo=None) if giveaway.end_datetime else None
             if giveaway_end_datetime and giveaway_end_datetime <= current_time:
                 await publish_giveaway_results(giveaway.id)
