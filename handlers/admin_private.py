@@ -285,8 +285,16 @@ async def get_top_finished_giveaways(message: Message, session: AsyncSession):
     limit = 4096
     places = ["1️⃣", "2️⃣", "3️⃣", "4️⃣", "5️⃣", "6️⃣", "7️⃣", "8️⃣", "9️⃣", "🔟"]
     for i, giv in enumerate(top_finished_giveaways):
-        giv_text = (f"{places[i]} /usergive{giv.id} <b>{giv.participants_count}</b>👥 | by: "
-                    f"<a href='tg://user?id={giv.user_id}'>id{giv.user_id}</a>\n")
+        try:
+            user = await bot.get_chat(giv.user_id)
+            user_name = user.first_name if user.first_name else "No name"
+            user_username = f"@{user.username}" if user.username else f"{user.id}"
+            giv_text = (f"{places[i]} /usergive{giv.id} <b>{giv.participants_count}</b>👥 | by: "
+                        f"<a href='tg://user?id={user.id}'>{user_name}</a> ({user_username})\n")
+        except Exception as e:
+            print(e)
+            giv_text = (f"{places[i]} /usergive{giv.id} <b>{giv.participants_count}</b>👥 | by: "
+                        f"<a href='tg://user?id={giv.user_id}'>{giv.user_id}</a>\n")
         if len(text) + len(giv_text) > limit:
             messages.append(text)
             text = initial_text + giv_text
@@ -305,7 +313,14 @@ async def get_top_finished_giveaways(message: Message, session: AsyncSession):
 #         return
 #     text = format_giveaways(active_giveaways)
 #     await message.answer(text)
+
 @admin_private_router.message(F.text.isdigit())
 async def test(message: Message):
-    id=message.text
-    await message.answer(f"<a href='tg://user?id={id}'>Юзер с id={id}</a>")
+    try:
+        user = await bot.get_chat(message.text)
+        user_name = user.first_name if user.first_name else "No name"
+        user_username = f"@{user.username}" if user.username else f"{user.id}"
+        await message.answer(f"<a href='tg://user?id={user.id}'>{user_name}</a> ({user_username})")
+    except Exception as e:
+        print(e)
+        await message.answer(f"<a href='tg://user?id={message.text}'>{message.text}</a>\n")

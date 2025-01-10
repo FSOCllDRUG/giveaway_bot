@@ -72,7 +72,7 @@ async def publish_giveaway_results(giveaway_id):
                 c += 1
                 chat = await bot.get_chat(winner)
                 user_name = chat.first_name if chat.first_name else "No name"
-                user_username = f"@{chat.username}" if chat.username else ""
+                user_username = f"@{chat.username}" if chat.username else f"{winner}"
                 winner_mentions.append(f"{c}.<a href='tg://user?id={winner}'>{user_name}</a> ({user_username})")
 
             giveaway_end_text = f"Розыгрыш завершен!\n\nПобедители:\n{'\n'.join(winner_mentions)}"
