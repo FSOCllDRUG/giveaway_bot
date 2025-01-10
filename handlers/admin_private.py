@@ -333,7 +333,3 @@ async def get_active_giveaways(message: Message, session: AsyncSession):
     messages.append(text)
     for msg in messages:
         await message.answer(msg)
-
-    await session.close()
-
-
