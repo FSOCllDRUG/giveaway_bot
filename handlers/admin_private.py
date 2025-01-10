@@ -298,19 +298,32 @@ async def get_top_finished_giveaways(message: Message, session: AsyncSession):
         await message.answer(msg)
 
 
-@admin_private_router.message(F.text == "Активные розыгрыши")
+@admin_private_router.message(F.text == "Активные розыгрыши")@admin_private_router.message(F.text == "Активные розыгрыши")
 async def get_active_giveaways(message: Message, session: AsyncSession):
     active_giveaways = await orm_get_active_giveaways_w_participants(session=session)
     initial_text = f"<b>🏆Активные розыгрыши({len(active_giveaways)})</b>\n\n"
     text = initial_text
     messages = []
     limit = 4096
+
     if not active_giveaways:
         await message.answer("❌ На данный момент нет активных розыгрышей!")
         return
-    for i, giv in enumerate(active_giveaways):
+
+    # Create a dictionary to store giveaways information
+    giveaways_info = []
+    for giv in active_giveaways:
         participants_count = await redis_get_participants_count(giv)
-        giv_text = f"{i+1}) /usergive{giv}\n {participants_count}👥\n"
+        giveaways_info.append({
+            "id": giv,
+            "participants_count": participants_count
+        })
+
+    # Sort the list by participants count in descending order
+    sorted_giveaways = sorted(giveaways_info, key=lambda x: x["participants_count"], reverse=True)
+
+    for i, giveaway in enumerate(sorted_giveaways):
+        giv_text = f"{i + 1}) /usergive{giveaway['id']} {giveaway['participants_count']}👥\n"
         if len(text) + len(giv_text) > limit:
             messages.append(text)
             text = initial_text + giv_text
@@ -320,4 +333,7 @@ async def get_active_giveaways(message: Message, session: AsyncSession):
     messages.append(text)
     for msg in messages:
         await message.answer(msg)
+
+    await session.close()
+
 
