@@ -70,7 +70,7 @@ async def publish_giveaway_results(giveaway_id):
             c = 0
             for winner in winners:
                 c += 1
-                winner_mentions.append(f"{c}.{await get_user_creds(winner)}\n")
+                winner_mentions.append(f"{c}.{await get_user_creds(winner)}")
 
                 # chat = await bot.get_chat(winner)
                 # user_name = chat.first_name if chat.first_name else "No name"
