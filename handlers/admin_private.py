@@ -249,6 +249,8 @@ async def get_user_giveaway(message: Message, session: AsyncSession):
     if status == "✅ Опубликован" or status == "❌ Завершён":
         await get_giveaway_post(giveaway, message.from_user.id)
     text = (f"<b>Розыгрыш №</b>{giveaway_id}\n"
+            f"<b>Создатель розыгрыша:</b> "
+            f"<a href='tg://user?id={giveaway.user_id}'>id{giveaway.user_id}</a>\n"
             f"Статус: {status}\n"
             f"Сообщение с розыгрышем: <a href='{post_url}'>Ссылка</a>\n"
             f"Количество участников: {participants_count}\n"
@@ -283,7 +285,6 @@ async def get_top_finished_giveaways(message: Message, session: AsyncSession):
     limit = 4096
     places = ["1️⃣", "2️⃣", "3️⃣", "4️⃣", "5️⃣", "6️⃣", "7️⃣", "8️⃣", "9️⃣", "🔟"]
     for i, giv in enumerate(top_finished_giveaways):
-        print(giv.user_id)
         giv_text = (f"{places[i]} /usergive{giv.id} <b>{giv.participants_count}</b>👥 | by: "
                     f"<a href='tg://user?id={giv.user_id}'>id{giv.user_id}</a>\n")
         if len(text) + len(giv_text) > limit:
