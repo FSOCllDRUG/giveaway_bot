@@ -284,7 +284,7 @@ async def get_top_finished_giveaways(message: Message, session: AsyncSession):
     places = ["1️⃣", "2️⃣", "3️⃣", "4️⃣", "5️⃣", "6️⃣", "7️⃣", "8️⃣", "9️⃣", "🔟"]
     for i, giv in enumerate(top_finished_giveaways):
         giv_text = (f"{places[i]} /usergive{giv.id} <b>{giv.participants_count}</b>👥 | by: "
-                    f"<a href='tg://user?id={giv.user_id}>{'id' + str(giv.user_id)}</a>\n")
+                    f"<a href='tg://user?id={giv.user_id}>id{giv.user_id}</a>\n")
         if len(text) + len(giv_text) > limit:
             messages.append(text)
             text = initial_text + giv_text
