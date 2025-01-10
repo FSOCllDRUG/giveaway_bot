@@ -308,4 +308,4 @@ async def get_top_finished_giveaways(message: Message, session: AsyncSession):
 @admin_private_router.message(F.text.isdigit())
 async def test(message: Message):
     id=message.text
-    await message.answer(f"<a href='tg://user?id={id}'>Юзер с id={id}</a>)
+    await message.answer(f"<a href='tg://user?id={id}'>Юзер с id={id}</a>")
