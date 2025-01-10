@@ -199,8 +199,11 @@ async def get_giveaway_post(giveaway, user_id):
 
     if giveaway.sponsor_channel_ids:
         for channel_id in giveaway.sponsor_channel_ids:
-            channel = await channel_info(channel_id=channel_id)
-            text += await channel_conditions_text(channel)
+            try:
+                channel = await channel_info(channel_id=channel_id)
+                text += await channel_conditions_text(channel)
+            except TelegramBadRequest:
+                text += f"✅ Подпишись на (бота удалили из канала)\n"
 
     if giveaway.extra_conditions:
         text += f"\n{giveaway.extra_conditions}\n\n"
