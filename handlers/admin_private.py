@@ -36,9 +36,8 @@ async def get_profile(message: Message, session: AsyncSession):
             chat = await bot.get_chat(channel.channel_id)
             channels_str += f"🔹<a href='{chat.invite_link}'>{chat.title}</a>\n"
         admin_text = (
-            f"👥\nВ базе данных <b>{count}</b> человек.. \n"
-            f"\n"
-            f"🎁\nБыло создано <b>{await orm_get_last_giveaway_id(session)}</b> розыгрышей\n\n"
+            f"В базе данных <b>{count}</b> человек👥\n\n"
+            f"Было создано <b>{await orm_get_last_giveaway_id(session)}</b> розыгрышей🎁\n\n"
         )
 
         active_users_day = await get_active_users_count(1)
