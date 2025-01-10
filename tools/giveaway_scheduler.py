@@ -15,7 +15,7 @@ from db.r_operations import redis_create_giveaway, redis_get_participants, redis
 from tools.giveaway_utils import post_giveaway, giveaway_post_notification, giveaway_result_notification, \
     update_giveaway_message
 from tools.texts import encode_giveaway_id
-from tools.utils import convert_id, is_subscribed, get_bot_link_to_start
+from tools.utils import convert_id, is_subscribed, get_bot_link_to_start, get_user_creds
 
 session = session_maker()
 
@@ -70,10 +70,12 @@ async def publish_giveaway_results(giveaway_id):
             c = 0
             for winner in winners:
                 c += 1
-                chat = await bot.get_chat(winner)
-                user_name = chat.first_name if chat.first_name else "No name"
-                user_username = f"@{chat.username}" if chat.username else f"{winner}"
-                winner_mentions.append(f"{c}.<a href='tg://user?id={winner}'>{user_name}</a> ({user_username})")
+                winner_mentions.append(f"{c}.{await get_user_creds(winner)}\n")
+
+                # chat = await bot.get_chat(winner)
+                # user_name = chat.first_name if chat.first_name else "No name"
+                # user_username = f"@{chat.username}" if chat.username else f"{winner}"
+                # winner_mentions.append(f"{c}.<a href='tg://user?id={winner}'>{user_name}</a> ({user_username})")
 
             giveaway_end_text = f"Розыгрыш завершен!\n\nПобедители:\n{'\n'.join(winner_mentions)}"
         else:

@@ -20,7 +20,7 @@ from keyboards.reply import get_keyboard, admin_kb
 from tools.giveaway_utils import get_giveaway_post
 from tools.mailing import simple_mailing
 from tools.texts import cbk_msg, format_giveaways_for_admin
-from tools.utils import msg_to_cbk, channel_info
+from tools.utils import msg_to_cbk, channel_info, get_user_creds
 
 admin_private_router = Router()
 admin_private_router.message.filter(ChatType("private"), IsAdmin())
@@ -285,16 +285,9 @@ async def get_top_finished_giveaways(message: Message, session: AsyncSession):
     limit = 4096
     places = ["1️⃣", "2️⃣", "3️⃣", "4️⃣", "5️⃣", "6️⃣", "7️⃣", "8️⃣", "9️⃣", "🔟"]
     for i, giv in enumerate(top_finished_giveaways):
-        try:
-            user = await bot.get_chat(giv.user_id)
-            user_name = user.first_name if user.first_name else "No name"
-            user_username = f"@{user.username}" if user.username else f"{user.id}"
-            giv_text = (f"{places[i]} /usergive{giv.id} <b>{giv.participants_count}</b>👥 | by: "
-                        f"<a href='tg://user?id={user.id}'>{user_name}</a> ({user_username})\n")
-        except Exception as e:
-            print(e)
-            giv_text = (f"{places[i]} /usergive{giv.id} <b>{giv.participants_count}</b>👥 | by: "
-                        f"<a href='tg://user?id={giv.user_id}'>{giv.user_id}</a>\n")
+        giv_text = (f"{places[i]} /usergive{giv.id} <b>{giv.participants_count}</b>👥 | by: "
+                    f"{await get_user_creds(giv.user_id)}\n")
+
         if len(text) + len(giv_text) > limit:
             messages.append(text)
             text = initial_text + giv_text
@@ -305,6 +298,7 @@ async def get_top_finished_giveaways(message: Message, session: AsyncSession):
     for msg in messages:
         await message.answer(msg)
 
+
 # @admin_private_router.message(F.text == "Активные розыгрыши")
 # async def get_active_giveaways(message: Message, session: AsyncSession):
 #     active_giveaways = await orm_get_active_giveaways(session=session)
@@ -314,13 +308,3 @@ async def get_top_finished_giveaways(message: Message, session: AsyncSession):
 #     text = format_giveaways(active_giveaways)
 #     await message.answer(text)
 
-@admin_private_router.message(F.text.isdigit())
-async def test(message: Message):
-    try:
-        user = await bot.get_chat(message.text)
-        user_name = user.first_name if user.first_name else "No name"
-        user_username = f"@{user.username}" if user.username else f"{user.id}"
-        await message.answer(f"<a href='tg://user?id={user.id}'>{user_name}</a> ({user_username})")
-    except Exception as e:
-        print(e)
-        await message.answer(f"<a href='tg://user?id={message.text}'>{message.text}</a>\n")

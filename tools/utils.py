@@ -99,3 +99,14 @@ async def remove_premium_emoji_tags(text: str) -> str:
     pattern = r'<tg-emoji emoji-id="\d+">([^<]+)</tg-emoji>'
     cleaned_text = re.sub(pattern, r'\1', text)
     return cleaned_text
+
+
+async def get_user_creds(user_id: int) -> str:
+    try:
+        user = await bot.get_chat(user_id)
+        user_name = user.first_name if user.first_name else "No name"
+        user_username = f"@{user.username}" if user.username else f"{user.id}"
+        text = f"<a href='tg://user?id={user.id}'>{user_name}</a> ({user_username})"
+    except Exception:
+        text = f"<a href='tg://user?id={user_id}'>{user_id}</a>"
+    return text
