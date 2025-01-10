@@ -249,8 +249,7 @@ async def get_user_giveaway(message: Message, session: AsyncSession):
     if status == "✅ Опубликован" or status == "❌ Завершён":
         await get_giveaway_post(giveaway, message.from_user.id)
     text = (f"<b>Розыгрыш №</b>{giveaway_id}\n"
-            f"<b>Создатель розыгрыша:</b> "
-            f"<a href='tg://user?id={giveaway.user_id}'>{giveaway.user_id}</a>\n"
+            f"<b>Создатель розыгрыша:</b> {await get_user_creds(giveaway.user_id)}\n"
             f"Статус: {status}\n"
             f"Сообщение с розыгрышем: <a href='{post_url}'>Ссылка</a>\n"
             f"Количество участников: {participants_count}\n"
