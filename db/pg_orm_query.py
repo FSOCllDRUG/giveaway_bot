@@ -393,3 +393,13 @@ async def orm_get_last_giveaway_id(session: AsyncSession) -> int:
     result = await session.execute(query)
     await session.close()
     return int(result.scalar_one_or_none())
+
+
+async def orm_get_active_giveaways_w_participants(session: AsyncSession):
+    result = await session.execute(
+        select(Giveaway.id).where(Giveaway.status == GiveawayStatus.PUBLISHED)
+        .order_by(Giveaway.participants_count.desc())
+    )
+    active_giveaways = result.scalars().all()
+    await session.close()
+    return active_giveaways

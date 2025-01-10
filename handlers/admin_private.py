@@ -9,7 +9,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from create_bot import bot
 from db.pg_orm_query import orm_count_users, orm_get_mailing_list, orm_get_required_channels, orm_is_required_channel, \
     orm_change_required_channel, orm_get_users_with_giveaways, orm_get_user_giveaways, orm_get_giveaway_by_id, \
-    orm_get_top_giveaways_by_participants, orm_get_last_giveaway_id
+    orm_get_top_giveaways_by_participants, orm_get_last_giveaway_id, orm_get_active_giveaways_w_participants
 from db.r_operations import (redis_set_mailing_users, redis_set_mailing_msg, redis_set_msg_from,
                              redis_set_mailing_btns, get_active_users_count, redis_get_participants_count)
 from filters.chat_type import ChatType
@@ -298,12 +298,26 @@ async def get_top_finished_giveaways(message: Message, session: AsyncSession):
         await message.answer(msg)
 
 
-# @admin_private_router.message(F.text == "Активные розыгрыши")
-# async def get_active_giveaways(message: Message, session: AsyncSession):
-#     active_giveaways = await orm_get_active_giveaways(session=session)
-#     if not active_giveaways:
-#         await message.answer("❌ На данный момент нет активных розыгрышей!")
-#         return
-#     text = format_giveaways(active_giveaways)
-#     await message.answer(text)
+@admin_private_router.message(F.text == "Активные розыгрыши")
+async def get_active_giveaways(message: Message, session: AsyncSession):
+    active_giveaways = await orm_get_active_giveaways_w_participants(session=session)
+    initial_text = f"<b>🏆Активные розыгрыши({len(active_giveaways)})</b>\n\n"
+    text = initial_text
+    messages = []
+    limit = 4096
+    if not active_giveaways:
+        await message.answer("❌ На данный момент нет активных розыгрышей!")
+        return
+    for i, giv in enumerate(active_giveaways):
+        participants_count = await redis_get_participants_count(giv)
+        giv_text = f"{i+1}) /usergive{giv}\n {participants_count}👥\n"
+        if len(text) + len(giv_text) > limit:
+            messages.append(text)
+            text = initial_text + giv_text
+        else:
+            text += giv_text
+
+    messages.append(text)
+    for msg in messages:
+        await message.answer(msg)
 
