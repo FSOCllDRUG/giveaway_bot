@@ -283,7 +283,8 @@ async def get_top_finished_giveaways(message: Message, session: AsyncSession):
     limit = 4096
     places = ["1️⃣", "2️⃣", "3️⃣", "4️⃣", "5️⃣", "6️⃣", "7️⃣", "8️⃣", "9️⃣", "🔟"]
     for i, giv in enumerate(top_finished_giveaways):
-        giv_text = f"{places[i]} /usergive{giv.id} <b>{giv.participants_count}</b>👥\n"
+        giv_text = (f"{places[i]} /usergive{giv.id} <b>{giv.participants_count}</b>👥 | by: "
+                    f"<a href='tg://user?id={giv.user_id}>{'id' + str(giv.user_id)}</a>\n")
         if len(text) + len(giv_text) > limit:
             messages.append(text)
             text = initial_text + giv_text
@@ -293,3 +294,12 @@ async def get_top_finished_giveaways(message: Message, session: AsyncSession):
     messages.append(text)
     for msg in messages:
         await message.answer(msg)
+
+# @admin_private_router.message(F.text == "Активные розыгрыши")
+# async def get_active_giveaways(message: Message, session: AsyncSession):
+#     active_giveaways = await orm_get_active_giveaways(session=session)
+#     if not active_giveaways:
+#         await message.answer("❌ На данный момент нет активных розыгрышей!")
+#         return
+#     text = format_giveaways(active_giveaways)
+#     await message.answer(text)
