@@ -9,7 +9,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from create_bot import bot
 from db.pg_orm_query import orm_count_users, orm_get_mailing_list, orm_get_required_channels, orm_is_required_channel, \
     orm_change_required_channel, orm_get_users_with_giveaways, orm_get_user_giveaways, orm_get_giveaway_by_id, \
-    orm_get_top_giveaways_by_participants
+    orm_get_top_giveaways_by_participants, orm_get_last_giveaway_id
 from db.r_operations import (redis_set_mailing_users, redis_set_mailing_msg, redis_set_msg_from,
                              redis_set_mailing_btns, get_active_users_count, redis_get_participants_count)
 from filters.chat_type import ChatType
@@ -37,7 +37,8 @@ async def get_profile(message: Message, session: AsyncSession):
             channels_str += f"🔹<a href='{chat.invite_link}'>{chat.title}</a>\n"
         admin_text = (
             f"👥\nВ базе данных <b>{count}</b> человек.. \n"
-            f"\n\n"
+            f"\n"
+            f"🎁\nБыло создано <b>{await orm_get_last_giveaway_id(session)}</b> розыгрышей\n\n"
         )
 
         active_users_day = await get_active_users_count(1)

@@ -386,3 +386,10 @@ async def orm_get_top_giveaways_by_participants(session: AsyncSession):
     top_giveaways = result.scalars().all()
     await session.close()
     return top_giveaways
+
+
+async def orm_get_last_giveaway_id(session: AsyncSession) -> int:
+    query = select(Giveaway.id).order_by(Giveaway.id.desc()).limit(1)
+    result = await session.execute(query)
+    await session.close()
+    return int(result.scalar_one_or_none())
