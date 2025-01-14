@@ -1,6 +1,6 @@
 import re
 
-from aiogram.exceptions import TelegramBadRequest
+from aiogram.exceptions import TelegramBadRequest, TelegramForbiddenError
 from aiogram.types import Message
 
 from create_bot import bot, env_admins
@@ -71,10 +71,16 @@ async def is_admin(user_id: int) -> bool:
 
 
 async def channel_info(channel_id: int):
-    chat = await bot.get_chat(channel_id)
-    if chat.invite_link is not None:
-        return chat
-    else:
+    try:
+        chat = await bot.get_chat(channel_id)
+        if chat.invite_link is not None:
+            return chat
+        else:
+            return None
+    except TelegramForbiddenError:
+        return None
+    except TelegramBadRequest as e:
+        print(f"Error checking channel info: {e}")
         return None
 
 

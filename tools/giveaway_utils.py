@@ -144,11 +144,11 @@ async def update_giveaway_message(session: AsyncSession, giveaway_id: int, chat_
     if buttons:
         try:
             await bot.edit_message_reply_markup(chat_id=chat_id, message_id=message_id, reply_markup=buttons)
-        except TelegramBadRequest:
-            pass
-        except TelegramForbiddenError:
-            print(f"Бот был исключен из канала {chat_id} и его розыгрыш #{giveaway_id}.")
-            bot.send_message(chat_id=env_admins[0], text=f"Бот был исключен из канала {chat_id} "
+        except TelegramBadRequest as e:
+            print(f"Ошибка запроса к Telegram: {e}")
+        except TelegramForbiddenError as e:
+            print(f"Бот был исключен из канала {chat_id} и его розыгрыш #{giveaway_id}.\n{e}")
+            bot.send_message(chat_id=6092344340, text=f"Бот был исключен из канала {chat_id} "
                                                          f"{await channel_info(channel_id=chat_id)} и его розыгрыш "
                                                          f"/usergive{giveaway_id}.")
 
