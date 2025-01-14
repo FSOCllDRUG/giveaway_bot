@@ -1,10 +1,11 @@
+import asyncio
 import datetime
 
 from aiogram.exceptions import TelegramBadRequest, TelegramForbiddenError
 from aiogram.types import InlineKeyboardMarkup, InlineKeyboardButton
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from create_bot import bot, env_admins
+from create_bot import bot
 from db.pg_models import GiveawayStatus
 from db.pg_orm_query import orm_get_giveaway_by_id
 from db.r_operations import redis_get_participants_count, redis_add_participant
@@ -140,20 +141,25 @@ async def update_button_text(session: AsyncSession, giveaway_id: int) -> InlineK
 
 
 async def update_giveaway_message(session: AsyncSession, giveaway_id: int, chat_id: int, message_id: int):
-    buttons = await update_button_text(session, giveaway_id)
-    if buttons:
+    new_buttons = await update_button_text(session, giveaway_id)
+    channel = await channel_info(chat_id)
+    if new_buttons:
         try:
-            await bot.edit_message_reply_markup(chat_id=chat_id, message_id=message_id, reply_markup=buttons)
+            await bot.edit_message_reply_markup(chat_id=chat_id, message_id=message_id, reply_markup=new_buttons)
+            await asyncio.sleep(1 / 20)
         except TelegramBadRequest as e:
-            channel = await channel_info(chat_id)
-            await bot.send_message(chat_id=6092344340, text=f"Ошибка запроса к Telegram:\n/usergive{giveaway_id}"
-                                                      f"\n{channel.title} {channel.invite_link}")
-            print(f"Ошибка запроса к Telegram: {e}")
+            if "exactly the same" in str(e):
+                pass
+            else:
+                await bot.send_message(chat_id=-1002459695785,
+                                       text=f"Ошибка запроса к Telegram:\n/usergive{giveaway_id}"
+                                            f"\n{channel.title} {channel.invite_link}\n{e}")
         except TelegramForbiddenError as e:
-            print(f"Бот был исключен из канала {chat_id} и его розыгрыш #{giveaway_id}.\n{e}")
-            bot.send_message(chat_id=6092344340, text=f"Бот был исключен из канала {chat_id} "
-                                                         f"{await channel_info(channel_id=chat_id)} и его розыгрыш "
-                                                         f"/usergive{giveaway_id}.")
+            bot.send_message(chat_id=-1002459695785,
+                             text=f"ОШИБКА ПРИ ОБНОВЛЕНИИ КНОПКИ РОЗЫГРЫША\n Бот был исключен из "
+                                  f"канала {chat_id} "
+                                  f"{channel.title} {channel.invite_link} и его розыгрыш "
+                                  f"/usergive{giveaway_id}.\n{e}")
 
 
 async def add_participant_to_redis(giveaway_id: int, user_id: int):
