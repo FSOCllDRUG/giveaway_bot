@@ -145,7 +145,7 @@ async def update_giveaway_message(session: AsyncSession, giveaway_id: int, chat_
         try:
             await bot.edit_message_reply_markup(chat_id=chat_id, message_id=message_id, reply_markup=buttons)
         except TelegramBadRequest as e:
-            bot.send_message(chat_id=6092344340, text=f"Ошибка запроса к Telegram:\n/usergive{giveaway_id}"
+            await bot.send_message(chat_id=6092344340, text=f"Ошибка запроса к Telegram:\n/usergive{giveaway_id}"
                                                       f"\n{await channel_info(chat_id)}")
             print(f"Ошибка запроса к Telegram: {e}")
         except TelegramForbiddenError as e:
