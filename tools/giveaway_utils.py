@@ -1,10 +1,10 @@
 import datetime
 
-from aiogram.exceptions import TelegramBadRequest
+from aiogram.exceptions import TelegramBadRequest, TelegramForbiddenError
 from aiogram.types import InlineKeyboardMarkup, InlineKeyboardButton
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from create_bot import bot
+from create_bot import bot, env_admins
 from db.pg_models import GiveawayStatus
 from db.pg_orm_query import orm_get_giveaway_by_id
 from db.r_operations import redis_get_participants_count, redis_add_participant
@@ -146,6 +146,11 @@ async def update_giveaway_message(session: AsyncSession, giveaway_id: int, chat_
             await bot.edit_message_reply_markup(chat_id=chat_id, message_id=message_id, reply_markup=buttons)
         except TelegramBadRequest:
             pass
+        except TelegramForbiddenError:
+            print(f"Бот был исключен из канала {chat_id} и его розыгрыш #{giveaway_id}.")
+            bot.send_message(chat_id=env_admins[0], text=f"Бот был исключен из канала {chat_id} "
+                                                         f"{await channel_info(channel_id=chat_id)} и его розыгрыш "
+                                                         f"/usergive{giveaway_id}.")
 
 
 async def add_participant_to_redis(giveaway_id: int, user_id: int):
