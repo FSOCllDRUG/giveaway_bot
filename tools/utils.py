@@ -1,4 +1,3 @@
-import asyncio
 import re
 
 from aiogram.exceptions import TelegramBadRequest, TelegramForbiddenError
@@ -9,15 +8,9 @@ from db.pg_engine import session_maker
 from db.pg_models import GiveawayStatus
 from db.pg_orm_query import orm_get_giveaways_by_sponsor_channel_id, orm_update_giveaway_status, orm_delete_channel, \
     orm_get_user_id_by_giveaway_id
-from decouple import config
+from tools.logs_channel import send_log
 
-logs_channel_id = int(config("LOGS_CHANNEL_ID"))
 session = session_maker()
-
-
-async def send_log(text: str):
-    await asyncio.sleep(1 / 20)
-    await bot.send_message(chat_id=logs_channel_id, text=text)
 
 
 async def get_bot_link_to_start() -> str:

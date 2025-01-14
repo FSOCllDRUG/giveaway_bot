@@ -5,7 +5,7 @@ from sqlalchemy import select, func, update, insert, delete, any_
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from db.pg_models import User, Channel, user_channel_association, Giveaway, GiveawayStatus
-from tools.utils import send_log
+from tools.logs_channel import send_log
 
 
 async def orm_user_start(session: AsyncSession, data: dict):
