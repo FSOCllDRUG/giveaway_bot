@@ -5,6 +5,7 @@ from sqlalchemy import select, func, update, insert, delete, any_
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from db.pg_models import User, Channel, user_channel_association, Giveaway, GiveawayStatus
+from tools.utils import send_log
 
 
 async def orm_user_start(session: AsyncSession, data: dict):
@@ -197,7 +198,7 @@ async def orm_create_giveaway(session, data, user_id):
         session.add(new_giveaway)
         await session.commit()
     except Exception as e:
-        print(f"Error creating giveaway: {e}")
+        await send_log(f"Error creating giveaway(pg_orm_query.py:167): {e}")
         await session.rollback()
 
 

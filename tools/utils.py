@@ -50,7 +50,7 @@ async def is_bot_admin(chat_id: int) -> bool:
         chat = await bot.get_chat(chat_id)
         return chat.invite_link is not None
     except TelegramBadRequest as e:
-        print(f"Error checking admin status: {e}")
+        await send_log(f"Error checking admin status(utils.py:48): {e}")
         return False
 
 
@@ -86,7 +86,7 @@ async def channel_info(channel_id: int):
     except TelegramForbiddenError:
         return None
     except TelegramBadRequest as e:
-        print(f"Error checking channel info: {e}")
+        await send_log(f"Error checking channel info(utils.py:79): {e}")
         return None
 
 
@@ -97,14 +97,14 @@ async def not_admin(chat_id: int, user_id: int = None):
                                                      f"Все связанные с этим каналом/группой розыгрыши завершены "
                                                      f"принудительно без определения победителей.")
     except Exception as e:
-        print(e)
+        await send_log(f"Error in utils.py:93: {e}")
     try:
         giveaways_ids = await orm_get_giveaways_by_sponsor_channel_id(session, chat_id)
         for giveaway in giveaways_ids:
             await orm_update_giveaway_status(session, giveaway, GiveawayStatus.FINISHED)
         await orm_delete_channel(session, chat_id)
     except Exception as e:
-        print(e)
+        await send_log(f"Error in utils.py:93: {e}")
 
 
 async def post_deleted(giveaway_id: int):
