@@ -1,3 +1,4 @@
+import asyncio
 import re
 
 from aiogram.exceptions import TelegramBadRequest, TelegramForbiddenError
@@ -6,7 +7,8 @@ from aiogram.types import Message
 from create_bot import bot, env_admins
 from db.pg_engine import session_maker
 from db.pg_models import GiveawayStatus
-from db.pg_orm_query import orm_get_giveaways_by_sponsor_channel_id, orm_update_giveaway_status, orm_delete_channel
+from db.pg_orm_query import orm_get_giveaways_by_sponsor_channel_id, orm_update_giveaway_status, orm_delete_channel, \
+    orm_get_user_id_by_giveaway_id
 
 session = session_maker()
 
@@ -14,6 +16,10 @@ session = session_maker()
 # from db.pg_engine import session_maker
 #
 # session = session_maker()
+
+async def send_log(text: str):
+    await asyncio.sleep(1 / 20)
+    await bot.send_message(chat_id=-1002459695785, text=text)
 
 
 async def get_bot_link_to_start() -> str:
@@ -88,7 +94,7 @@ async def not_admin(chat_id: int, user_id: int = None):
     try:
         await bot.send_message(chat_id=user_id, text=f"Ты удалил меня из канала/группы {chat_id}!\n"
                                                      f"Канал удалён из базы данных.\n"
-                                                     f"Все связанные с этим каналом/группой розыгрыши заверешены "
+                                                     f"Все связанные с этим каналом/группой розыгрыши завершены "
                                                      f"принудительно без определения победителей.")
     except Exception as e:
         print(e)
@@ -99,6 +105,18 @@ async def not_admin(chat_id: int, user_id: int = None):
         await orm_delete_channel(session, chat_id)
     except Exception as e:
         print(e)
+
+
+async def post_deleted(giveaway_id: int):
+    try:
+        user_id = await orm_get_user_id_by_giveaway_id(session, giveaway_id)
+        await bot.send_message(chat_id=user_id, text=f"Ты удалил пост розыгрыша #{giveaway_id}!\n"
+                                                     f"Розыгрыш завершён принудительно "
+                                                     f"без определения победителей.\n"
+                                                     f"/mygive{giveaway_id}")
+        await orm_update_giveaway_status(session, giveaway_id, GiveawayStatus.FINISHED)
+    except Exception as e:
+        await send_log(f"ОШИБКА ПРИ УДАЛЕНИИ РОЗЫГРЫША:\n/usergive{giveaway_id}\n\n{e}")
 
 
 async def remove_premium_emoji_tags(text: str) -> str:

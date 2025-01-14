@@ -403,3 +403,12 @@ async def orm_get_active_giveaways_w_participants(session: AsyncSession):
     active_giveaways = result.scalars().all()
     await session.close()
     return active_giveaways
+
+
+async def orm_get_user_id_by_giveaway_id(session: AsyncSession, giveaway_id: int):
+    result = await session.execute(
+        select(Giveaway.user_id).where(Giveaway.id == giveaway_id)
+    )
+    user_id = result.scalar_one_or_none()
+    await session.close()
+    return user_id

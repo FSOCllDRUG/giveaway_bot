@@ -11,7 +11,7 @@ from db.pg_orm_query import orm_get_giveaway_by_id
 from db.r_operations import redis_get_participants_count, redis_add_participant
 from keyboards.inline import get_callback_btns
 from tools.texts import encode_giveaway_id, channel_conditions_text
-from tools.utils import channel_info, get_bot_link_to_start, convert_id, get_channel_hyperlink
+from tools.utils import channel_info, get_bot_link_to_start, convert_id, get_channel_hyperlink, post_deleted, send_log
 
 
 async def get_giveaway_info_text(data: dict) -> str:
@@ -150,16 +150,15 @@ async def update_giveaway_message(session: AsyncSession, giveaway_id: int, chat_
         except TelegramBadRequest as e:
             if "exactly the same" in str(e):
                 pass
+            elif "message to edit not found" in str(e):
+                await post_deleted(giveaway_id=giveaway_id)
             else:
-                await bot.send_message(chat_id=-1002459695785,
-                                       text=f"Ошибка запроса к Telegram:\n/usergive{giveaway_id}"
-                                            f"\n{channel.title} {channel.invite_link}\n{e}")
+                await send_log(text=f"ОШИБКА ПРИ ОБНОВЛЕНИИ КНОПКИ РОЗЫГРЫША:\n/usergive{giveaway_id}"
+                                    f"\n{channel.title} {channel.invite_link}\n\n{e}")
         except TelegramForbiddenError as e:
-            bot.send_message(chat_id=-1002459695785,
-                             text=f"ОШИБКА ПРИ ОБНОВЛЕНИИ КНОПКИ РОЗЫГРЫША\n Бот был исключен из "
-                                  f"канала {chat_id} "
-                                  f"{channel.title} {channel.invite_link} и его розыгрыш "
-                                  f"/usergive{giveaway_id}.\n{e}")
+            await send_log(text=f"ОШИБКА ПРИ ОБНОВЛЕНИИ КНОПКИ РОЗЫГРЫША\n Бот был исключен из канала {chat_id} "
+                                f"{channel.title} {channel.invite_link} и его розыгрыш:\n"
+                                f"/usergive{giveaway_id}.\n\n{e}")
 
 
 async def add_participant_to_redis(giveaway_id: int, user_id: int):
