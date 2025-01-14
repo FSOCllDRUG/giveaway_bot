@@ -28,7 +28,8 @@ async def set_commands():
 async def start_bot():
     await set_commands()
     try:
-        await bot.send_message(6092344340, f"Бот запущен🥳.")
+
+        await bot.send_message(env_admins[0], f"Бот запущен🥳.")
     except:
         pass
 
