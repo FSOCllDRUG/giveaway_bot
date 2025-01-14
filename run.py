@@ -21,14 +21,14 @@ async def set_commands():
                 BotCommand(command="my_gives", description="Мои розыгрыши"),
                 BotCommand(command="new_give", description="Создать розыгрыш"),
                 BotCommand(command="my_channels", description="Мои каналы/группы"),
-                BotCommand(command="developer", description="Контакт разработчика"),]
+                BotCommand(command="developer", description="Контакт разработчика"), ]
     await bot.set_my_commands(commands, BotCommandScopeDefault())
 
 
 async def start_bot():
     await set_commands()
     try:
-            await bot.send_message(6092344340, f"Бот запущен🥳.")
+        await bot.send_message(6092344340, f"Бот запущен🥳.")
     except:
         pass
 
