@@ -150,7 +150,7 @@ async def update_giveaway_message(session: AsyncSession, giveaway_id: int, chat_
         except TelegramBadRequest as e:
             if "exactly the same" in str(e):
                 pass
-            elif "message to edit not found" in str(e):
+            elif "message to edit not found" or "MESSAGE_ID_INVALID" in str(e):
                 await post_deleted(giveaway_id=giveaway_id)
             else:
                 await send_log(text=f"ОШИБКА ПРИ ОБНОВЛЕНИИ КНОПКИ РОЗЫГРЫША:\n/usergive{giveaway_id}"
