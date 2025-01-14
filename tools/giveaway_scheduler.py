@@ -104,29 +104,28 @@ async def schedule_giveaways():
         not_published, ready_for_results = await orm_get_due_giveaways(session, current_time)
 
         if not not_published and not ready_for_results:
-            await asyncio.sleep(60)
             continue
+        else:
+            for giveaway in not_published:
+                giveaway_post_datetime = giveaway.post_datetime.replace(tzinfo=None) if giveaway.post_datetime else None
+                if giveaway_post_datetime <= current_time:
+                    await publish_giveaway(giveaway.id)
+                    await asyncio.sleep(1 / 20)
 
-        for giveaway in not_published:
-            giveaway_post_datetime = giveaway.post_datetime.replace(tzinfo=None) if giveaway.post_datetime else None
-            if giveaway_post_datetime <= current_time:
-                await publish_giveaway(giveaway.id)
+            for giveaway in ready_for_results:
+                await update_giveaway_message(session, giveaway.id, giveaway.channel_id, giveaway.message_id)
                 await asyncio.sleep(1 / 20)
-
-        for giveaway in ready_for_results:
-            await update_giveaway_message(session, giveaway.id, giveaway.channel_id, giveaway.message_id)
-            await asyncio.sleep(1 / 20)
-            giveaway_end_datetime = giveaway.end_datetime.replace(tzinfo=None) if giveaway.end_datetime else None
-            if giveaway_end_datetime and giveaway_end_datetime <= current_time:
-                await publish_giveaway_results(giveaway.id)
-                await asyncio.sleep(1 / 20)
-                continue
-
-            if giveaway.end_count is not None:
-                participants_count = await redis_get_participants_count(giveaway.id)
-                if participants_count >= giveaway.end_count:
+                giveaway_end_datetime = giveaway.end_datetime.replace(tzinfo=None) if giveaway.end_datetime else None
+                if giveaway_end_datetime and giveaway_end_datetime <= current_time:
                     await publish_giveaway_results(giveaway.id)
                     await asyncio.sleep(1 / 20)
+                    continue
+
+                if giveaway.end_count is not None:
+                    participants_count = await redis_get_participants_count(giveaway.id)
+                    if participants_count >= giveaway.end_count:
+                        await publish_giveaway_results(giveaway.id)
+                        await asyncio.sleep(1 / 20)
 
         await asyncio.sleep(60)
 
