@@ -16,6 +16,7 @@ from filters.chat_type import ChatType
 from keyboards.inline import get_callback_btns, captcha_toggle
 from tools.giveaway_utils import get_giveaway_preview, get_channel_hyperlink, \
     get_giveaway_info_text
+from tools.logs_channel import send_log
 from tools.texts import datetime_example, captcha_on_text, captcha_off_text
 from tools.utils import channel_info, remove_premium_emoji_tags
 
@@ -162,8 +163,8 @@ async def create_giveaway_own_button(message: Message, state: FSMContext):
                          "Чтобы добавить канал, нужно:\n"
                          "1. <b>Добавить бота</b> (@WinGiveBot) в ваш канал <u>в роли администратора</u> (это "
                          "нужно, чтобы бот мог проверить подписан ли пользователь на канал).\n"
-                         "2. <b>Отправить боту канал в формате</b> @channelname "
-                         "(или переслать пост из канала).\n\n"
+                         "2. <b>Отправить боту канал в формате</b> @channelname или ссылку на канал(он <u>НЕ</u> "
+                         "должен быть приватным‼️), или переслать пост из канала).\n\n"
 
                          "⚠️<b>Если вы хотите, чтобы участие в розыгрыше было без подписок на канал, "
                          "нажмите кнопку ниже:</b>",
@@ -214,7 +215,8 @@ async def create_giveaway_sponsor_channels(message: Message, state: FSMContext):
             await message.answer(text=ch_text,
                                  reply_markup=await get_callback_btns(
                                      btns={"Достаточно каналов, двигаемся дальше!": "finish_sponsors"}))
-        except Exception:
+        except Exception as e:
+            await send_log(f"Error adding sponsor channel: {e}")
             await message.answer("❌ Ошибка при добавлении канала!")
     elif message.text.startswith("@"):
         channel_name = message.text
@@ -256,7 +258,8 @@ async def create_giveaway_sponsor_channels(message: Message, state: FSMContext):
             await message.answer(text=ch_text,
                                  reply_markup=await get_callback_btns(
                                      btns={"Достаточно каналов, двигаемся дальше!": "finish_sponsors"}))
-        except Exception:
+        except Exception as e:
+            await send_log(f"Error adding sponsor channel: {e}")
             await message.answer("❌ Ошибка при добавлении канала!")
     elif message.text.startswith("https://t.me/"):
         channel_name = f'@+{message.text.split("https://t.me/")[-1]}'
@@ -298,7 +301,8 @@ async def create_giveaway_sponsor_channels(message: Message, state: FSMContext):
             await message.answer(text=ch_text,
                                  reply_markup=await get_callback_btns(
                                      btns={"Достаточно каналов, двигаемся дальше!": "finish_sponsors"}))
-        except Exception:
+        except Exception as e:
+            await send_log(f"Error adding sponsor channel: {e}")
             await message.answer("❌ Ошибка при добавлении канала!")
 
 
