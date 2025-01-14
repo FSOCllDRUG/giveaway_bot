@@ -258,6 +258,48 @@ async def create_giveaway_sponsor_channels(message: Message, state: FSMContext):
                                      btns={"Достаточно каналов, двигаемся дальше!": "finish_sponsors"}))
         except Exception:
             await message.answer("❌ Ошибка при добавлении канала!")
+    elif message.text.startswith("https://t.me/"):
+        channel_name = f'@+{message.text.split("https://t.me/")[-1]}'
+        try:
+            chat = await bot.get_chat(channel_name)
+            if not chat:
+                await message.answer("❌ Канал не найден!")
+                return
+            if not (await chat.get_member(bot.id)).can_manage_chat:
+                await message.answer(
+                    f"❌ Для добавления канала {channel_name} бот должен быть админом в этом канале.")
+                return
+
+            data = await state.get_data()
+            if "sponsor_channels" not in data:
+                data["sponsor_channels"] = []
+
+            if chat.id in data["sponsor_channels"]:
+                # Канал уже добавлен, ничего не делаем
+                return
+
+            data["sponsor_channels"].append(chat.id)
+            await state.set_data(data)
+
+            ch_text = (f"✅ Канал {channel_name} добавлен, Вы можете добавить еще один или продолжить создание "
+                       f"розыгрыша!\n\n"
+                       "<b>Чтобы добавить еще каналы, просто присылайте на них ссылки.</b>"
+                       "\n\n")
+
+            if "sponsor_channels" in data:
+                c = 1
+                ch_text += "Добавленные каналы:\n"
+                for channel in data["sponsor_channels"]:
+                    ch_text += f"{c}) {await get_channel_hyperlink(channel)}\n"
+                    c += 1
+            ch_text += ("\n<b>❗️ Важно:</b>\n"
+                        "Не забирайте у бота права администратора канала, иначе"
+                        "проверка подписки происходить не будет!")
+            await message.answer(text=ch_text,
+                                 reply_markup=await get_callback_btns(
+                                     btns={"Достаточно каналов, двигаемся дальше!": "finish_sponsors"}))
+        except Exception:
+            await message.answer("❌ Ошибка при добавлении канала!")
 
 
 @giveaway_create_router.callback_query(StateFilter(CreateGiveaway.sponsor_channels), F.data == "finish_sponsors")
