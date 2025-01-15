@@ -212,7 +212,7 @@ async def check_giveaway_text(session: AsyncSession, giveaway_id: int) -> str:
         text += "\nРезультаты розыгрыша:\n\nПобедители:\n"
         for winner_id in giveaway.winner_ids:
             c += 1
-            text += f"{c}.{await get_user_creds(winner_id)}"
+            text += f"{c}.{await get_user_creds(winner_id)}\n"
         return text
 
 
