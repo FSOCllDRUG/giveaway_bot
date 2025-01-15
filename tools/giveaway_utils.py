@@ -167,12 +167,11 @@ async def update_giveaway_message(session: AsyncSession, giveaway_id: int, chat_
             elif "message to edit not found" or "MESSAGE_ID_INVALID" in str(e):
                 await post_deleted(giveaway_id=giveaway_id)
             else:
-                await send_log(text=f"ОШИБКА ПРИ ОБНОВЛЕНИИ КНОПКИ РОЗЫГРЫША:\n/usergive{giveaway_id}"
+                await send_log(text=f"Error while updating button for giveaway:\n/usergive{giveaway_id}"
                                     f"\n{channel.title} {channel.invite_link}\n\n{e}")
         except TelegramForbiddenError as e:
-            await send_log(text=f"ОШИБКА ПРИ ОБНОВЛЕНИИ КНОПКИ РОЗЫГРЫША\n Бот был исключен из канала {chat_id} "
-                                f"{channel.title} {channel.invite_link} и его розыгрыш:\n"
-                                f"/usergive{giveaway_id}.\n\n{e}")
+            await send_log(text=f"Error while updating button for giveaway:\n/usergive{giveaway_id}"
+                                f"\n{channel.title} {channel.invite_link}\n\n{e}")
 
 
 async def add_participant_to_redis(giveaway_id: int, user_id: int):
