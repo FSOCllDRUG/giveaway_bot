@@ -11,8 +11,8 @@ from db.pg_orm_query import orm_get_giveaway_by_id
 from db.r_operations import redis_get_participants_count, redis_add_participant
 from keyboards.inline import get_callback_btns
 from tools.texts import encode_giveaway_id, channel_conditions_text
-from tools.utils import channel_info, get_bot_link_to_start, convert_id, get_channel_hyperlink, post_deleted, send_log, \
-    get_user_creds
+from tools.utils import channel_info, get_bot_link_to_start, convert_id, get_channel_hyperlink, post_deleted, \
+    send_log, get_user_creds
 
 
 async def get_giveaway_info_text(data: dict) -> str:
@@ -122,12 +122,13 @@ async def winners_notification(winners: list, message, link):
     clear_chat_id = await convert_id(chat_id)
     message_id = message.message_id
     post_url = f"https://t.me/c/{clear_chat_id}/{message_id}"
-    winners_list=""
+    winners_list = ""
     for i, winner_id in enumerate(winners, start=1):
         winners_list += f"{i}. {await get_user_creds(winner_id)}\n"
     text = (f"🎉🎉Поздравляем🎉🎉\n\n"
             f"Вы стали победителем <a href='{post_url}'>розыгрыша</a>!🎁\n"
-            f"Благодарим за участие!\n"
+            f"Благодарим за участие!\n\n"
+            f"Список победителей:\n"
             f"{winners_list}\n"
             f"{link}")
     for winner in winners:

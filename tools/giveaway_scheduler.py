@@ -77,12 +77,12 @@ async def publish_giveaway_results(giveaway_id):
                 # user_username = f"@{chat.username}" if chat.username else f"{winner}"
                 # winner_mentions.append(f"{c}.<a href='tg://user?id={winner}'>{user_name}</a> ({user_username})")
 
-            giveaway_end_text = f"Розыгрыш завершен!\n\nПобедители:\n{'\n'.join(winner_mentions)}"
+            giveaway_end_text = f"Розыгрыш завершен!\n\nПобедители:\n{'\n'.join(winner_mentions)}\n\n"
         else:
-            giveaway_end_text = "Розыгрыш завершен, но подходящих победителей нет."
+            giveaway_end_text = "Розыгрыш завершен, но подходящих победителей нет.\n\n"
 
         g_id = await encode_giveaway_id(giveaway.id)
-        verify_link= f"\n\n<a href='{await get_bot_link_to_start()}checkgive_{g_id}'>Проверить результаты</a>"
+        verify_link = f"<a href='{await get_bot_link_to_start()}checkgive_{g_id}'>Проверить результаты</a>"
         giveaway_end_text += verify_link
         try:
             message = await bot.send_message(reply_to_message_id=msg_id, chat_id=giveaway.channel_id,
