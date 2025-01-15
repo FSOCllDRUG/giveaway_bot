@@ -116,6 +116,19 @@ async def giveaway_post_notification(giveaway, post_url):
     await bot.send_message(chat_id=giveaway.user_id, text=text)
 
 
+async def winners_notification(winners: list, message):
+    chat_id = message.chat.id
+    clear_chat_id = await convert_id(chat_id)
+    message_id = message.message_id
+    post_url = f"https://t.me/c/{clear_chat_id}/{message_id}"
+    text = (f"🎉🎉Поздравляем🎉🎉\n\n"
+            f"Вы стали победителем <a href='{post_url}'>розыгрыша</a>!🎁\n"
+            f"Благодарим за участие!")
+    for winner in winners:
+        await asyncio.sleep(1 / 20)
+        await bot.send_message(chat_id=winner, text=text)
+
+
 async def giveaway_result_notification(message, giveaway):
     chat_id = message.chat.id
     clear_chat_id = await convert_id(chat_id)

@@ -13,7 +13,7 @@ from db.pg_orm_query import orm_get_giveaway_by_id, orm_get_due_giveaways, \
 from db.r_operations import redis_create_giveaway, redis_get_participants, redis_expire_giveaway, \
     redis_get_participants_count
 from tools.giveaway_utils import post_giveaway, giveaway_post_notification, giveaway_result_notification, \
-    update_giveaway_message
+    update_giveaway_message, winners_notification
 from tools.texts import encode_giveaway_id
 from tools.utils import convert_id, is_subscribed, get_bot_link_to_start, get_user_creds
 
@@ -86,6 +86,7 @@ async def publish_giveaway_results(giveaway_id):
         try:
             message = await bot.send_message(reply_to_message_id=msg_id, chat_id=giveaway.channel_id,
                                              text=giveaway_end_text)
+            await winners_notification(winners=winners, message=message)
         except TelegramBadRequest:
             message = await bot.send_message(chat_id=giveaway.channel_id,
                                              text=giveaway_end_text)
