@@ -8,8 +8,8 @@ async def create_graph(data):
     months, user_counts = zip(*data)
     fig, ax = plt.subplots(figsize=(15, 8))
 
-    # Создание дополнительного пространства слева для текста
-    fig.subplots_adjust(left=0.3)
+    # Сдвиг графика вправо для добавления текста слева
+    plt.subplots_adjust(left=0.2, right=0.9)
 
     # Установка сетки за столбами
     ax.set_axisbelow(True)
@@ -20,7 +20,7 @@ async def create_graph(data):
 
     # Определение цветовой палитры
     cmap = plt.get_cmap('tab20')
-    bar_width = 0.8  # Ширина столбцов
+    bar_width = 0.5  # Ширина столбцов
 
     # Создание гистограммы с разными цветами
     for i, (month, user_count) in enumerate(zip(months, user_counts)):
@@ -42,7 +42,7 @@ async def create_graph(data):
     total_users = sum(user_counts)
 
     # Добавление текста с суммарным количеством пользователей
-    plt.text(-0.5, max(user_counts) / 2, f'Суммарное количество пользователей: {total_users}', fontsize=12, va='center')
+    fig.text(0.1, 0.5, f'Суммарное количество пользователей: {total_users}', fontsize=12, va='center')
 
     # Добавление легенды
     ax.legend(loc='upper left', bbox_to_anchor=(1, 1), title='Месяц')
