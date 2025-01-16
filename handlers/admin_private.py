@@ -9,7 +9,8 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from create_bot import bot
 from db.pg_orm_query import orm_count_users, orm_get_mailing_list, orm_get_required_channels, orm_is_required_channel, \
     orm_change_required_channel, orm_get_users_with_giveaways, orm_get_user_giveaways, orm_get_giveaway_by_id, \
-    orm_get_top_giveaways_by_participants, orm_get_last_giveaway_id, orm_get_active_giveaways_w_participants
+    orm_get_top_giveaways_by_participants, orm_get_last_giveaway_id, orm_get_active_giveaways_w_participants, \
+    orm_get_user_regs
 from db.r_operations import (redis_set_mailing_users, redis_set_mailing_msg, redis_set_msg_from,
                              redis_set_mailing_btns, get_active_users_count, redis_get_participants_count)
 from filters.chat_type import ChatType
@@ -18,6 +19,7 @@ from handlers.giveaway_interaction_router import status_mapping
 from keyboards.inline import get_callback_btns
 from keyboards.reply import get_keyboard, admin_kb
 from tools.giveaway_utils import get_giveaway_post
+from tools.graph import create_graph
 from tools.mailing import simple_mailing
 from tools.texts import cbk_msg, format_giveaways_for_admin
 from tools.utils import msg_to_cbk, channel_info, get_user_creds
@@ -333,3 +335,10 @@ async def get_active_giveaways(message: Message, session: AsyncSession):
     messages.append(text)
     for msg in messages:
         await message.answer(msg)
+
+
+@admin_private_router.message(F.text == "График")
+async def get_graph(message: Message, session: AsyncSession):
+    graph_image = await create_graph(await orm_get_user_regs(session=session, start_date="2024-12-01",
+                                                             end_date="2025-12-16"))
+    await message.answer_photo(photo=graph_image)

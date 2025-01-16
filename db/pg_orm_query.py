@@ -413,3 +413,25 @@ async def orm_get_user_id_by_giveaway_id(session: AsyncSession, giveaway_id: int
     user_id = result.scalar_one_or_none()
     await session.close()
     return user_id
+
+
+async def orm_get_user_regs(session: AsyncSession, start_date, end_date):
+    query = (
+        select(
+            User.created,
+            func.count(User.id)
+        )
+        .where(
+            User.created >= start_date,
+            User.created <= end_date
+        )
+        .group_by(
+            User.created
+        )
+        .order_by(
+            User.created.asc()
+        )
+    )
+    result = await session.execute(query)
+    data = result.fetchall()
+    return data
