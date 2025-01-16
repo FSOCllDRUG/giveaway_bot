@@ -5,16 +5,13 @@ import io
 
 async def create_graph(data):
     dates, users = zip(*data)
-    fig, ax = plt.subplots()
+    fig, ax = plt.subplots(figsize=(15, 8))
 
-    # Поворот и форматирование меток оси X
-    ax.xaxis.set_major_formatter(mdates.DateFormatter('%Y-%m-%d'))
-    plt.xticks(rotation=45)
+    ax.xaxis.set_major_formatter(mdates.DateFormatter('%m-%d'))
+    plt.xticks(rotation=90)
 
-    # Добавление сетки
     ax.grid(True)
 
-    # Построение графика
     plt.plot(dates, users, marker='o', color='b', linestyle='-', linewidth=2, markersize=5)
     plt.xlabel('Дата регистрации')
     plt.ylabel('Количество новых пользователей')
