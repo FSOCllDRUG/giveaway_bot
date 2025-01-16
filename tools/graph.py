@@ -1,5 +1,4 @@
 import io
-
 import matplotlib.dates as mdates
 import matplotlib.pyplot as plt
 import matplotlib.patches as mpatches
@@ -8,8 +7,8 @@ async def create_graph(data):
     months, user_counts = zip(*data)
     fig, ax = plt.subplots(figsize=(15, 8))
 
-    # Сдвиг графика к правому краю
-    plt.subplots_adjust(left=0.35, right=0.95)
+    # Сдвиг графика к правому краю и уменьшение отступов
+    plt.subplots_adjust(left=0.1, right=0.95, top=0.9, bottom=0.1)
 
     # Установка сетки за столбами
     ax.set_axisbelow(True)
@@ -23,8 +22,9 @@ async def create_graph(data):
     bar_width = 20 / len(months)  # Адаптивная ширина столбцов
 
     # Создание гистограммы с разными цветами
+    bars = []
     for i, (month, user_count) in enumerate(zip(months, user_counts)):
-        ax.bar(month, user_count, color=cmap(i / len(months)), width=bar_width)
+        bars.append(ax.bar(month, user_count, color=cmap(i / len(months)), width=bar_width))
 
     # Установка подписей оси X по центру под столбами
     ax.set_xticks(months)
@@ -38,16 +38,16 @@ async def create_graph(data):
     for month, user_count in zip(months, user_counts):
         ax.annotate(f'{user_count}', xy=(month, user_count), xytext=(0, 5), textcoords='offset points', ha='center')
 
+    # Подсчет суммарного количества пользователей
     total_users = sum(user_counts)
+    legend_text = [f'{month.strftime("%Y-%m")}: {user_count} пользователей' for month, user_count in zip(months, user_counts)]
 
     # Создание отдельного объекта для общего количества пользователей
     total_patch = mpatches.Patch(color='none', label=f'Всего пользователей: {total_users}')
 
-    # Добавление общего количества пользователей и легенды с месяцами
-    ax.legend(handles=[total_patch] + [
-        mpatches.Patch(color=cmap(i / len(months)), label=f'{month.strftime("%Y-%m")}: {user_count}') for
-        i, (month, user_count) in enumerate(zip(months, user_counts))],
-              loc='center left', bbox_to_anchor=(-0.4, 0.5))
+    # Добавление общего количества пользователей и легенды с месяцами в самый угол изображения
+    ax.legend(handles=[total_patch] + [mpatches.Patch(color=cmap(i / len(months)), label=f'{month.strftime("%Y-%m")}: {user_count}') for i, (month, user_count) in enumerate(zip(months, user_counts))],
+              loc='upper left', bbox_to_anchor=(-0.1, 1), fontsize=10, title='Статистика')
 
     # Сохранение изображения в память
     img_data = io.BytesIO()
