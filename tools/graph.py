@@ -1,6 +1,7 @@
-import matplotlib.pyplot as plt
-import matplotlib.dates as mdates
 import io
+
+import matplotlib.dates as mdates
+import matplotlib.pyplot as plt
 
 
 async def create_graph(data):
@@ -13,18 +14,18 @@ async def create_graph(data):
 
     # Форматирование меток оси X
     ax.xaxis.set_major_formatter(mdates.DateFormatter('%Y-%m'))
-    plt.xticks(rotation=90)
 
     # Определение цветовой палитры
-    colors = plt.cm.get_cmap('tab20', len(months)).colors
+    cmap = plt.get_cmap('tab20')
+    bar_width = 20 / len(months)  # Адаптивная ширина столбцов
 
     # Создание гистограммы с разными цветами
     for i, (month, user_count) in enumerate(zip(months, user_counts)):
-        ax.bar(month, user_count, color=colors[i], width=20)
+        ax.bar(month, user_count, color=cmap(i / len(months)), width=bar_width)
 
     # Установка подписей оси X по центру под столбами
     ax.set_xticks(months)
-    ax.set_xticklabels([month.strftime('%Y-%m') for month in months], rotation=90, ha='center')
+    ax.set_xticklabels([month.strftime('%Y-%m') for month in months], rotation=0, ha='center')
 
     plt.xlabel('Месяц')
     plt.ylabel('Количество новых пользователей')
