@@ -12,7 +12,7 @@ from create_bot import bot
 from db.pg_orm_query import orm_count_users, orm_get_mailing_list, orm_get_required_channels, orm_is_required_channel, \
     orm_change_required_channel, orm_get_users_with_giveaways, orm_get_user_giveaways, orm_get_giveaway_by_id, \
     orm_get_top_giveaways_by_participants, orm_get_last_giveaway_id, orm_get_active_giveaways_w_participants, \
-    orm_get_user_regs
+    orm_get_user_regs_by_month
 from db.r_operations import (redis_set_mailing_users, redis_set_mailing_msg, redis_set_msg_from,
                              redis_set_mailing_btns, get_active_users_count, redis_get_participants_count)
 from filters.chat_type import ChatType
@@ -343,6 +343,7 @@ async def get_active_giveaways(message: Message, session: AsyncSession):
 async def get_graph(message: Message, session: AsyncSession):
     start_date = datetime(2024, 12, 1)
     end_date = datetime.now()
-    graph_image = await create_graph(await orm_get_user_regs(session=session, start_date=start_date, end_date=end_date))
+    graph_image = await create_graph(
+        await orm_get_user_regs_by_month(session=session, start_date=start_date, end_date=end_date))
     input_file = BufferedInputFile(graph_image.getvalue(), filename=f"graph.png")
     await message.answer_photo(photo=input_file)
