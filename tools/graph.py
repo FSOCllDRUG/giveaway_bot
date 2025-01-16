@@ -6,14 +6,10 @@ import matplotlib.pyplot as plt
 
 async def create_graph(data):
     months, user_counts = zip(*data)
-
-    # Подсчет суммарного количества пользователей
-    total_users = sum(user_counts)
-
     fig, ax = plt.subplots(figsize=(15, 8))
 
-    # Сдвиг графика вправо для добавления текста слева
-    plt.subplots_adjust(left=0.3, right=0.9)
+    # Создание дополнительного пространства слева для аннотаций
+    plt.subplots_adjust(left=0.4, right=0.9)
 
     # Установка сетки за столбами
     ax.set_axisbelow(True)
@@ -28,7 +24,7 @@ async def create_graph(data):
 
     # Создание гистограммы с разными цветами
     for i, (month, user_count) in enumerate(zip(months, user_counts)):
-        ax.bar(month, user_count, color=cmap(i / len(months)), width=bar_width, label=month.strftime('%Y-%m'))
+        ax.bar(month, user_count, color=cmap(i / len(months)), width=bar_width)
 
     # Установка подписей оси X по центру под столбами
     ax.set_xticks(months)
@@ -38,16 +34,19 @@ async def create_graph(data):
     plt.ylabel('Количество новых пользователей')
     plt.title('Активность регистрации пользователей по месяцам')
 
-    # Добавление аннотаций в виде таблицы слева от графика
-    annotation_text = f'Общее количество пользователей: {total_users}\n\n'
-    for month, user_count in zip(months, user_counts):
-        annotation_text += f'{month.strftime("%Y-%m")}: {user_count} пользователей\n'
+    # Подсчет суммарного количества пользователей
+    total_users = sum(user_counts)
 
     # Добавление текста с аннотациями слева
-    fig.text(0.1, 0.5, annotation_text, fontsize=12, va='center', ha='left')
+    annotation_text = f'Всего: {total_users} пользователей\n\n'
+    for month, user_count in zip(months, user_counts):
+        annotation_text += f'{month.strftime("%Y-%m")}: {user_count}\n'
+    plt.gcf().text(0.02, 0.9, annotation_text, fontsize=12, verticalalignment='top')
 
     # Добавление легенды
-    ax.legend(loc='upper left', bbox_to_anchor=(1, 1), title='Месяц')
+    ax.legend(
+        [f'{month.strftime("%Y-%m")}: {user_count} пользователей' for month, user_count in zip(months, user_counts)],
+        loc='upper left', bbox_to_anchor=(1, 1))
 
     # Сохранение изображения в память
     img_data = io.BytesIO()

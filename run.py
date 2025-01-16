@@ -55,7 +55,7 @@ async def main():
     dp.shutdown.register(stop_bot)
 
     try:
-        await bot.delete_webhook(drop_pending_updates=True)
+        await bot.delete_webhook(drop_pending_updates=False)
         # Start the scheduler in the background
         asyncio.create_task(start_scheduler())
         # Start polling
