@@ -38,6 +38,7 @@ status_mapping = {
 
 class Captcha(StatesGroup):
     giveaway_id = State()
+    post_url = State()
     awaiting_captcha = State()
     attempts_left = State()
 
@@ -64,7 +65,7 @@ async def start_join_giveaway(message: Message, command: CommandObject, session:
         return
     user_id = message.from_user.id
     if user_id in await redis_get_participants(giveaway_id):
-        await message.answer(f"❗️Вы уже участвуете в розыгрыше #{giveaway_id}.",
+        await message.answer(f"❗️Вы уже участвуете в <a href='{giveaway.post_url}'>розыгрыше</a> #{giveaway_id}.",
                              reply_markup=await main_kb(await is_admin(message.from_user.id)))
         return
     sponsor_channels, captcha, end_count = await orm_get_join_giveaway_data(session=session,
@@ -72,27 +73,30 @@ async def start_join_giveaway(message: Message, command: CommandObject, session:
 
     if await is_subscribed(channels=sponsor_channels, user_id=user_id) == False:
         await message.answer(
-            f"Чтобы участвовать в розыгрыше, <b><u>Вам необходимо подписаться</u></b> на все "
+            f"Чтобы участвовать в <a href='{giveaway.post_url}'>розыгрыше</a> #{giveaway_id}, <b><u>Вам необходимо "
+            f"подписаться</u></b> на все "
             f"указанные каналы в условиях.",
             reply_markup=await main_kb(await is_admin(message.from_user.id)))
         return
 
     if captcha:
         captcha_text, captcha_image = await generate_captcha()
-        await message.answer("❗️<b>Перед тем, как Вы станете участником розыгрыша, Мы должны убедиться, "
-                             "что Вы не бот.</b>")
+        await message.answer(
+            f"❗️<b>Перед тем, как Вы станете участником <a href='{giveaway.post_url}'>розыгрыша</a>, "
+            f"Мы должны убедиться, "
+            "что Вы не бот.</b>")
         await redis_conn.setex(f"captcha:{user_id}", 300, captcha_text)  # Save captcha in redis with a TTL
         input_file = BufferedInputFile(captcha_image.getvalue(), filename=f"captcha{user_id}.png")
         await message.answer_photo(photo=input_file, caption="❓Какие числа Вы видите на картинке? Отправьте боту "
                                                              "ответ!\n\n"
                                                              "<b>Для отказа от участия в розыгрыше нажмите</b> /cancel")
         await state.set_state(Captcha.awaiting_captcha)
-        await state.update_data(giveaway_id=giveaway_id, chat_id=message.chat.id, message_id=message.message_id)
+        await state.update_data(giveaway_id=giveaway_id, post_url=giveaway.post_url)
     else:
         await add_participant_to_redis(giveaway_id, user_id)
         await state.clear()
         await message.answer(f"🎉 <b>Поздравляем!</b>\n"
-                             f"Теперь Вы участник розыгрыша #{giveaway_id}!",
+                             f"Теперь Вы участник <a href='{giveaway.post_url}'>розыгрыша</a> #{giveaway_id}.!",
                              reply_markup=await main_kb(await is_admin(message.from_user.id)))
         if end_count:
             if await redis_get_participants_count(giveaway_id) >= end_count:
@@ -139,9 +143,10 @@ async def check_captcha(message: Message, state: FSMContext, session: AsyncSessi
                              reply_markup=await main_kb(await is_admin(message.from_user.id)))
         data = await state.get_data()
         giveaway_id = data.get('giveaway_id')
+        post_url = data.get('post_url')
         await add_participant_to_redis(giveaway_id, user_id)
         await message.answer(f"🎉 <b>Поздравляем!</b>\n"
-                             f"<b>Теперь Вы участник розыгрыша #{giveaway_id}!</b>")
+                             f"Теперь Вы участник <a href='{post_url}'>розыгрыша</a> #{giveaway_id}!")
         await state.clear()
         await add_participant_to_redis(giveaway_id, user_id)
         await redis_conn.delete(f"captcha:{user_id}")
