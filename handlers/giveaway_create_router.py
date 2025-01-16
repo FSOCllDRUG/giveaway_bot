@@ -381,7 +381,8 @@ async def get_extra_conditions(message: Message, state: FSMContext):
     await state.set_state(CreateGiveaway.post_datetime)
     await message.answer("⏰ Когда нужно опубликовать розыгрыш?",
                          reply_markup=await get_callback_btns(btns={"Прямо сейчас!": "post_now",
-                                                                    "Запланировать публикацию!": "post_plan"}))
+                                                                    "Запланировать публикацию!": "post_plan"},
+                                                              sizes=(1,)))
 
 
 @giveaway_create_router.callback_query(StateFilter(CreateGiveaway.extra_conditions),
@@ -391,7 +392,8 @@ async def ask_post_datetime(callback: CallbackQuery, state: FSMContext):
     await state.set_state(CreateGiveaway.post_datetime)
     await callback.message.answer("⏰ Когда нужно опубликовать розыгрыш?",
                                   reply_markup=await get_callback_btns(btns={"Прямо сейчас!": "post_now",
-                                                                             "Запланировать публикацию!": "post_plan"}))
+                                                                             "Запланировать публикацию!": "post_plan"},
+                                                                       sizes=(1,)))
 
 
 @giveaway_create_router.callback_query(StateFilter(CreateGiveaway.post_datetime), F.data.startswith("post_"))
@@ -406,7 +408,7 @@ async def create_giveaway_post_datetime(callback: CallbackQuery, state: FSMConte
                                       reply_markup=await get_callback_btns(btns={
                                           "По количеству участников!": "end_count",
                                           "По времени!": "end_time"
-                                      }))
+                                      }, sizes=(1,)))
         await state.set_state(CreateGiveaway.end_datetime)
     elif callback.data == "post_plan":
         await callback.message.answer("⏰ Когда нужно опубликовать розыгрыш? (Укажите время в формате дд.мм.гг чч:мм)"
@@ -439,7 +441,7 @@ async def set_giveaway_post_datetime(message: Message, state: FSMContext):
                              reply_markup=await get_callback_btns(btns={
                                  "По времени!": "end_time",
                                  "По количеству участников!": "end_count"
-                             }))
+                             }, sizes=(1,)))
     except ValueError:
         await message.answer("❌ Некорректный формат <b><u>дата и времени</u></b>!")
 

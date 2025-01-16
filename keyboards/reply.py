@@ -68,6 +68,7 @@ async def admin_kb():
         [KeyboardButton(text="Розыгрыши пользователей")],
         [KeyboardButton(text="Активные розыгрыши")],
         [KeyboardButton(text="Топ законченных розыгрышей")],
+        [KeyboardButton(text="График по месяцам")],
         [KeyboardButton(text="Главное меню")]
     ]
     # if env_admin:
