@@ -8,9 +8,6 @@ async def create_graph(data):
     months, user_counts = zip(*data)
     fig, ax = plt.subplots(figsize=(15, 8))
 
-    # Создание дополнительного пространства слева для аннотаций
-    plt.subplots_adjust(left=0.4, right=0.9)
-
     # Установка сетки за столбами
     ax.set_axisbelow(True)
     ax.grid(True, which='both', axis='both')
@@ -20,7 +17,7 @@ async def create_graph(data):
 
     # Определение цветовой палитры
     cmap = plt.get_cmap('tab20')
-    bar_width = 0.5  # Ширина столбцов
+    bar_width = 20 / len(months)  # Адаптивная ширина столбцов
 
     # Создание гистограммы с разными цветами
     for i, (month, user_count) in enumerate(zip(months, user_counts)):
@@ -34,19 +31,9 @@ async def create_graph(data):
     plt.ylabel('Количество новых пользователей')
     plt.title('Активность регистрации пользователей по месяцам')
 
-    # Подсчет суммарного количества пользователей
-    total_users = sum(user_counts)
-
-    # Добавление текста с аннотациями слева
-    annotation_text = f'Всего: {total_users} пользователей\n\n'
+    # Добавление аннотаций
     for month, user_count in zip(months, user_counts):
-        annotation_text += f'{month.strftime("%Y-%m")}: {user_count}\n'
-    plt.gcf().text(0.02, 0.9, annotation_text, fontsize=12, verticalalignment='top')
-
-    # Добавление легенды
-    ax.legend(
-        [f'{month.strftime("%Y-%m")}: {user_count} пользователей' for month, user_count in zip(months, user_counts)],
-        loc='upper left', bbox_to_anchor=(1, 1))
+        ax.annotate(f'{user_count}', xy=(month, user_count), xytext=(0, 5), textcoords='offset points', ha='center')
 
     # Сохранение изображения в память
     img_data = io.BytesIO()
