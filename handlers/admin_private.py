@@ -342,7 +342,7 @@ async def get_active_giveaways(message: Message, session: AsyncSession):
 @admin_private_router.message(F.text == "График")
 async def get_graph(message: Message, session: AsyncSession):
     start_date = datetime(2024, 12, 1)
-    end_date = datetime(2025, 12, 16)
+    end_date = datetime.now()
     graph_image = await create_graph(await orm_get_user_regs(session=session, start_date=start_date, end_date=end_date))
     input_file = BufferedInputFile(graph_image.getvalue(), filename=f"graph.png")
     await message.answer_photo(photo=input_file)

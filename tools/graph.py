@@ -7,7 +7,7 @@ async def create_graph(data):
     dates, users = zip(*data)
     fig, ax = plt.subplots(figsize=(15, 8))
 
-    ax.xaxis.set_major_formatter(mdates.DateFormatter('%m-%d'))
+    ax.xaxis.set_major_formatter(mdates.DateFormatter('%Y-%m'))
     plt.xticks(rotation=90)
 
     ax.grid(True)

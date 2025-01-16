@@ -415,18 +415,18 @@ async def orm_get_user_id_by_giveaway_id(session: AsyncSession, giveaway_id: int
     return user_id
 
 
-async def orm_get_user_regs(session: AsyncSession, start_date: datetime, end_date: datetime):
+async def orm_get_user_regs_by_month(session: AsyncSession, start_date: datetime, end_date: datetime):
     query = (
         select(
-            func.date_trunc('day', User.created).label('day'),
+            func.date_trunc('month', User.created).label('month'),
             func.count(User.id)
         )
         .where(
             User.created >= start_date,
             User.created <= end_date
         )
-        .group_by('day')
-        .order_by('day')
+        .group_by('month')
+        .order_by('month')
     )
     result = await session.execute(query)
     data = result.fetchall()
