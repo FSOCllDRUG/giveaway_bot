@@ -59,7 +59,8 @@ async def start_join_giveaway(message: Message, command: CommandObject, session:
         await message.answer("Розыгрыш не найден.", reply_markup=await main_kb(await is_admin(message.from_user.id)))
         return
     elif giveaway.status == GiveawayStatus.FINISHED:
-        await message.answer("Розыгрыш уже завершён.", reply_markup=await main_kb(await is_admin(message.from_user.id)))
+        await message.answer(f"Розыгрыш #{giveaway_id} уже завершён.", reply_markup=await main_kb(await is_admin(
+            message.from_user.id)))
         return
     user_id = message.from_user.id
     if user_id in await redis_get_participants(giveaway_id):
