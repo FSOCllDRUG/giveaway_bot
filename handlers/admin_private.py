@@ -1,3 +1,5 @@
+from datetime import datetime
+
 from aiogram import F, Router
 from aiogram.filters import StateFilter
 from aiogram.fsm.context import FSMContext
@@ -339,6 +341,7 @@ async def get_active_giveaways(message: Message, session: AsyncSession):
 
 @admin_private_router.message(F.text == "График")
 async def get_graph(message: Message, session: AsyncSession):
-    graph_image = await create_graph(await orm_get_user_regs(session=session, start_date="2024-12-01",
-                                                             end_date="2025-12-16"))
+    start_date = datetime(2024, 12, 1)
+    end_date = datetime(2025, 12, 16)
+    graph_image = await create_graph(await orm_get_user_regs(session=session, start_date=start_date, end_date=end_date))
     await message.answer_photo(photo=graph_image)

@@ -415,7 +415,7 @@ async def orm_get_user_id_by_giveaway_id(session: AsyncSession, giveaway_id: int
     return user_id
 
 
-async def orm_get_user_regs(session: AsyncSession, start_date, end_date):
+async def orm_get_user_regs(session: AsyncSession, start_date: datetime, end_date: datetime):
     query = (
         select(
             User.created,
