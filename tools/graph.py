@@ -1,11 +1,19 @@
-import io
-
-import matplotlib.dates as mdates
 import matplotlib.pyplot as plt
+import matplotlib.dates as mdates
+import io
+from datetime import datetime
 
 
 async def create_graph(data):
     months, user_counts = zip(*data)
+
+    # Вычисление общего количества пользователей
+    total_users = list()
+    cumulative_sum = 0
+    for count in user_counts:
+        cumulative_sum += count
+        total_users.append(cumulative_sum)
+
     fig, ax = plt.subplots(figsize=(15, 8))
 
     # Установка сетки за столбами
@@ -32,8 +40,15 @@ async def create_graph(data):
     plt.title('Активность регистрации пользователей по месяцам')
 
     # Добавление аннотаций
-    for month, user_count in zip(months, user_counts):
+    for month, user_count, total in zip(months, user_counts, total_users):
         ax.annotate(f'{user_count}', xy=(month, user_count), xytext=(0, 5), textcoords='offset points', ha='center')
+        ax.annotate(f'Всего: {total}', xy=(month, user_count), xytext=(0, 20), textcoords='offset points', ha='center', fontsize=8, color='gray')
+
+    # Добавление линии общего количества пользователей
+    ax2 = ax.twinx()
+    ax2.plot(months, total_users, color='red', linestyle='--', marker='o', label='Общее количество пользователей')
+    ax2.set_ylabel('Общее количество пользователей')
+    ax2.legend(loc='upper left')
 
     # Сохранение изображения в память
     img_data = io.BytesIO()
