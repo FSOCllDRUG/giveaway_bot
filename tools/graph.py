@@ -6,10 +6,14 @@ import matplotlib.pyplot as plt
 
 async def create_graph(data):
     months, user_counts = zip(*data)
+
+    # Подсчет суммарного количества пользователей
+    total_users = sum(user_counts)
+
     fig, ax = plt.subplots(figsize=(15, 8))
 
     # Сдвиг графика вправо для добавления текста слева
-    plt.subplots_adjust(left=0.2, right=0.9)
+    plt.subplots_adjust(left=0.3, right=0.9)
 
     # Установка сетки за столбами
     ax.set_axisbelow(True)
@@ -34,15 +38,13 @@ async def create_graph(data):
     plt.ylabel('Количество новых пользователей')
     plt.title('Активность регистрации пользователей по месяцам')
 
-    # Добавление аннотаций
+    # Добавление аннотаций в виде таблицы слева от графика
+    annotation_text = f'Общее количество пользователей: {total_users}\n\n'
     for month, user_count in zip(months, user_counts):
-        ax.annotate(f'{user_count}', xy=(month, user_count), xytext=(0, 5), textcoords='offset points', ha='center')
+        annotation_text += f'{month.strftime("%Y-%m")}: {user_count} пользователей\n'
 
-    # Подсчет суммарного количества пользователей
-    total_users = sum(user_counts)
-
-    # Добавление текста с суммарным количеством пользователей
-    fig.text(0.1, 0.5, f'Суммарное количество пользователей: {total_users}', fontsize=12, va='center')
+    # Добавление текста с аннотациями слева
+    fig.text(0.1, 0.5, annotation_text, fontsize=12, va='center', ha='left')
 
     # Добавление легенды
     ax.legend(loc='upper left', bbox_to_anchor=(1, 1), title='Месяц')
