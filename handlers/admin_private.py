@@ -4,7 +4,7 @@ from aiogram import F, Router
 from aiogram.filters import StateFilter
 from aiogram.fsm.context import FSMContext
 from aiogram.fsm.state import StatesGroup, State
-from aiogram.types import Message, CallbackQuery
+from aiogram.types import Message, CallbackQuery, BufferedInputFile
 from aiogram.utils.chat_action import ChatActionSender
 from sqlalchemy.ext.asyncio import AsyncSession
 
@@ -344,4 +344,5 @@ async def get_graph(message: Message, session: AsyncSession):
     start_date = datetime(2024, 12, 1)
     end_date = datetime(2025, 12, 16)
     graph_image = await create_graph(await orm_get_user_regs(session=session, start_date=start_date, end_date=end_date))
-    await message.answer_photo(photo=graph_image)
+    input_file = BufferedInputFile(graph_image.getvalue(), filename=f"graph.png")
+    await message.answer_photo(photo=input_file)
