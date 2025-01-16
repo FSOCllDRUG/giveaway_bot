@@ -339,7 +339,7 @@ async def get_active_giveaways(message: Message, session: AsyncSession):
         await message.answer(msg)
 
 
-@admin_private_router.message(F.text == "График")
+@admin_private_router.message(F.text == "График по месяцам")
 async def get_graph(message: Message, session: AsyncSession):
     start_date = datetime(2024, 12, 1)
     end_date = datetime.now()
