@@ -35,6 +35,11 @@ async def create_graph(data):
     for month, user_count in zip(months, user_counts):
         ax.annotate(f'{user_count}', xy=(month, user_count), xytext=(0, 5), textcoords='offset points', ha='center')
 
+    total_users = sum(user_counts)
+    ax.legend([f'Всего пользователей: {total_users}'] + [f'{month.strftime("%Y-%m")}: {user_count} пользователей' for
+                                                         month, user_count in zip(months, user_counts)],
+              loc='upper left', bbox_to_anchor=(1, 1))
+
     # Сохранение изображения в память
     img_data = io.BytesIO()
     plt.savefig(img_data, format='png')
