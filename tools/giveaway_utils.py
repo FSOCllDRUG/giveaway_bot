@@ -125,7 +125,7 @@ async def winners_notification(winners: list, message, link):
     winners_list = ""
     for i, winner_id in enumerate(winners, start=1):
         winners_list += f"{i}. {await get_user_creds(winner_id)}\n"
-    text = (f"🎉<b>Поздравляем</b>\n\n"
+    text = (f"🎉<b>Поздравляем!</b>\n\n"
             f"Вы стали победителем <a href='{post_url}'>розыгрыша</a>!🎁\n\n"
             f"<b>Благодарим за участие!</b>\n\n"
             f"Список победителей:\n"
