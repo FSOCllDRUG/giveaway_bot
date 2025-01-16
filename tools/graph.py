@@ -8,6 +8,9 @@ async def create_graph(data):
     months, user_counts = zip(*data)
     fig, ax = plt.subplots(figsize=(15, 8))
 
+    # Сдвиг графика к правому краю
+    plt.subplots_adjust(left=0.35, right=0.95)
+
     # Установка сетки за столбами
     ax.set_axisbelow(True)
     ax.grid(True, which='both', axis='both')
@@ -36,9 +39,9 @@ async def create_graph(data):
         ax.annotate(f'{user_count}', xy=(month, user_count), xytext=(0, 5), textcoords='offset points', ha='center')
 
     total_users = sum(user_counts)
-    ax.legend([f'Всего пользователей: {total_users}'] + [f'{month.strftime("%Y-%m")}: {user_count} пользователей' for
-                                                         month, user_count in zip(months, user_counts)],
-              loc='upper left', bbox_to_anchor=(1, 1))
+    legend_text = [f'{month.strftime("%Y-%m")}: {user_count}' for
+                   month, user_count in zip(months, user_counts)] + [f'Всего: {total_users}']
+    ax.legend(legend_text, loc='center left', bbox_to_anchor=(-0.3, 0.5))
 
     # Сохранение изображения в память
     img_data = io.BytesIO()
