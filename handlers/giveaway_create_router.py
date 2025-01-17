@@ -219,7 +219,12 @@ async def create_giveaway_sponsor_channels(message: Message, state: FSMContext):
             await send_log(f"Error adding sponsor channel: {e}\n\n"
                            f"{await get_user_creds(message.from_user.id)}:\n"
                            f"<blockquote>{message.text}</blockquote>")
-            await message.answer("❌ Ошибка при добавлении канала!")
+            await message.answer("❌ Ошибка при добавлении канала!"
+                                 "Проверьте необходимые прав в канале/группе для работы бота:\n"
+                                 "\n✅ Отправка сообщений"
+                                 "\n✅ Удаление сообщений"
+                                 "\n✅ Редактирование сообщений\n\n"
+                                 )
     elif message.text.startswith("@"):
         channel_name = message.text
         try:
@@ -264,7 +269,12 @@ async def create_giveaway_sponsor_channels(message: Message, state: FSMContext):
             await send_log(f"Error adding sponsor channel: {e}\n\n"
                            f"{await get_user_creds(message.from_user.id)}:\n"
                            f"<blockquote>{message.text}</blockquote>")
-            await message.answer("❌ Ошибка при добавлении канала!")
+            await message.answer("❌ Ошибка при добавлении канала!"
+                                 "Проверьте необходимые прав в канале/группе для работы бота:\n"
+                                 "\n✅ Отправка сообщений"
+                                 "\n✅ Удаление сообщений"
+                                 "\n✅ Редактирование сообщений\n\n"
+                                 )
     elif message.text.startswith("https://t.me/") or message.text.startswith("t.me/"):
         channel_name = f'@{message.text.split("/")[-1]}'
         try:
@@ -309,7 +319,12 @@ async def create_giveaway_sponsor_channels(message: Message, state: FSMContext):
             await send_log(f"Error adding sponsor channel: {e}\n\n"
                            f"{await get_user_creds(message.from_user.id)}:\n"
                            f"<blockquote>{message.text}</blockquote>")
-            await message.answer("❌ Ошибка при добавлении канала!")
+            await message.answer("❌ Ошибка при добавлении канала!"
+                                 "Проверьте необходимые прав в канале/группе для работы бота:\n"
+                                 "\n✅ Отправка сообщений"
+                                 "\n✅ Удаление сообщений"
+                                 "\n✅ Редактирование сообщений\n\n"
+                                 )
 
 
 @giveaway_create_router.callback_query(StateFilter(CreateGiveaway.sponsor_channels), F.data == "finish_sponsors")
