@@ -221,9 +221,9 @@ async def create_giveaway_sponsor_channels(message: Message, state: FSMContext):
                            f"<blockquote>{message.text}</blockquote>")
             await message.answer("❌ Ошибка при добавлении канала!"
                                  "Проверьте необходимые прав в канале/группе для работы бота:\n"
-                                 "\n✅ Отправка сообщений"
-                                 "\n✅ Удаление сообщений"
-                                 "\n✅ Редактирование сообщений\n\n"
+                                 "\n✅ Изменение профиля канала/группы"
+                                 "\n✅ Управление сообщениями"
+                                 "\n✅ Добавление участников"
                                  )
     elif message.text.startswith("@"):
         channel_name = message.text
@@ -271,9 +271,9 @@ async def create_giveaway_sponsor_channels(message: Message, state: FSMContext):
                            f"<blockquote>{message.text}</blockquote>")
             await message.answer("❌ Ошибка при добавлении канала!"
                                  "Проверьте необходимые прав в канале/группе для работы бота:\n"
-                                 "\n✅ Отправка сообщений"
-                                 "\n✅ Удаление сообщений"
-                                 "\n✅ Редактирование сообщений\n\n"
+                                 "\n✅ Изменение профиля канала/группы"
+                                 "\n✅ Управление сообщениями"
+                                 "\n✅ Добавление участников"
                                  )
     elif message.text.startswith("https://t.me/") or message.text.startswith("t.me/"):
         channel_name = f'@{message.text.split("/")[-1]}'
@@ -321,9 +321,9 @@ async def create_giveaway_sponsor_channels(message: Message, state: FSMContext):
                            f"<blockquote>{message.text}</blockquote>")
             await message.answer("❌ Ошибка при добавлении канала!"
                                  "Проверьте необходимые прав в канале/группе для работы бота:\n"
-                                 "\n✅ Отправка сообщений"
-                                 "\n✅ Удаление сообщений"
-                                 "\n✅ Редактирование сообщений\n\n"
+                                 "\n✅ Изменение профиля канала/группы"
+                                 "\n✅ Управление сообщениями"
+                                 "\n✅ Добавление участников"
                                  )
 
 
