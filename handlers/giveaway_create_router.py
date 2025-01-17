@@ -216,6 +216,19 @@ async def create_giveaway_sponsor_channels(message: Message, state: FSMContext):
                                  reply_markup=await get_callback_btns(
                                      btns={"Достаточно каналов, двигаемся дальше!": "finish_sponsors"}))
         except Exception as e:
+            if "member list is inaccessible" in str(e):
+                await message.answer("❌ Канал не доступен, проверьте права администратора.")
+                await send_log(f"Error adding sponsor channel: {e}\n\n"
+                               f"БОТУ НЕ ВЫДАЛИ ВСЕ ПРАВА АДМИНИСТРАТОРА КАНАЛА!\n\n"
+                               f"{await get_user_creds(message.from_user.id)}:\n"
+                               f"<blockquote>{message.text}</blockquote>")
+                await message.answer("❌ Ошибка при добавлении канала!"
+                                     "Проверьте необходимые прав в канале/группе для работы бота:\n"
+                                     "\n✅ Изменение профиля канала/группы"
+                                     "\n✅ Управление сообщениями"
+                                     "\n✅ Добавление участников"
+                                     )
+                return
             await send_log(f"Error adding sponsor channel: {e}\n\n"
                            f"{await get_user_creds(message.from_user.id)}:\n"
                            f"<blockquote>{message.text}</blockquote>")
@@ -266,6 +279,19 @@ async def create_giveaway_sponsor_channels(message: Message, state: FSMContext):
                                  reply_markup=await get_callback_btns(
                                      btns={"Достаточно каналов, двигаемся дальше!": "finish_sponsors"}))
         except Exception as e:
+            if "member list is inaccessible" in str(e):
+                await message.answer("❌ Канал не доступен, проверьте права администратора.")
+                await send_log(f"Error adding sponsor channel: {e}\n\n"
+                               f"БОТУ НЕ ВЫДАЛИ ВСЕ ПРАВА АДМИНИСТРАТОРА КАНАЛА!\n\n"
+                               f"{await get_user_creds(message.from_user.id)}:\n"
+                               f"<blockquote>{message.text}</blockquote>")
+                await message.answer("❌ Ошибка при добавлении канала!"
+                                     "Проверьте необходимые прав в канале/группе для работы бота:\n"
+                                     "\n✅ Изменение профиля канала/группы"
+                                     "\n✅ Управление сообщениями"
+                                     "\n✅ Добавление участников"
+                                     )
+                return
             await send_log(f"Error adding sponsor channel: {e}\n\n"
                            f"{await get_user_creds(message.from_user.id)}:\n"
                            f"<blockquote>{message.text}</blockquote>")
@@ -316,6 +342,19 @@ async def create_giveaway_sponsor_channels(message: Message, state: FSMContext):
                                  reply_markup=await get_callback_btns(
                                      btns={"Достаточно каналов, двигаемся дальше!": "finish_sponsors"}))
         except Exception as e:
+            if "member list is inaccessible" in str(e):
+                await message.answer("❌ Канал не доступен, проверьте права администратора.")
+                await send_log(f"Error adding sponsor channel: {e}\n\n"
+                               f"БОТУ НЕ ВЫДАЛИ ВСЕ ПРАВА АДМИНИСТРАТОРА КАНАЛА!\n\n"
+                               f"{await get_user_creds(message.from_user.id)}:\n"
+                               f"<blockquote>{message.text}</blockquote>")
+                await message.answer("❌ Ошибка при добавлении канала!"
+                                     "Проверьте необходимые прав в канале/группе для работы бота:\n"
+                                     "\n✅ Изменение профиля канала/группы"
+                                     "\n✅ Управление сообщениями"
+                                     "\n✅ Добавление участников"
+                                     )
+                return
             await send_log(f"Error adding sponsor channel: {e}\n\n"
                            f"{await get_user_creds(message.from_user.id)}:\n"
                            f"<blockquote>{message.text}</blockquote>")
