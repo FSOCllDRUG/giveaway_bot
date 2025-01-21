@@ -222,7 +222,7 @@ async def create_giveaway_sponsor_channels(message: Message, state: FSMContext):
                                f"БОТУ НЕ ВЫДАЛИ ВСЕ ПРАВА АДМИНИСТРАТОРА КАНАЛА!\n\n"
                                f"{await get_user_creds(message.from_user.id)}:\n"
                                f"<blockquote>{message.text}</blockquote>")
-                await message.answer("❌ Ошибка при добавлении канала!"
+                await message.answer("❌ Ошибка при добавлении канала!\n"
                                      "Проверьте необходимые прав в канале/группе для работы бота:\n"
                                      "\n✅ Изменение профиля канала/группы"
                                      "\n✅ Управление сообщениями"
@@ -232,7 +232,7 @@ async def create_giveaway_sponsor_channels(message: Message, state: FSMContext):
             await send_log(f"Error adding sponsor channel: {e}\n\n"
                            f"{await get_user_creds(message.from_user.id)}:\n"
                            f"<blockquote>{message.text}</blockquote>")
-            await message.answer("❌ Ошибка при добавлении канала!"
+            await message.answer("❌ Ошибка при добавлении канала!\n"
                                  "Проверьте необходимые прав в канале/группе для работы бота:\n"
                                  "\n✅ Изменение профиля канала/группы"
                                  "\n✅ Управление сообщениями"
@@ -285,7 +285,7 @@ async def create_giveaway_sponsor_channels(message: Message, state: FSMContext):
                                f"БОТУ НЕ ВЫДАЛИ ВСЕ ПРАВА АДМИНИСТРАТОРА КАНАЛА!\n\n"
                                f"{await get_user_creds(message.from_user.id)}:\n"
                                f"<blockquote>{message.text}</blockquote>")
-                await message.answer("❌ Ошибка при добавлении канала!"
+                await message.answer("❌ Ошибка при добавлении канала!\n"
                                      "Проверьте необходимые прав в канале/группе для работы бота:\n"
                                      "\n✅ Изменение профиля канала/группы"
                                      "\n✅ Управление сообщениями"
@@ -295,7 +295,7 @@ async def create_giveaway_sponsor_channels(message: Message, state: FSMContext):
             await send_log(f"Error adding sponsor channel: {e}\n\n"
                            f"{await get_user_creds(message.from_user.id)}:\n"
                            f"<blockquote>{message.text}</blockquote>")
-            await message.answer("❌ Ошибка при добавлении канала!"
+            await message.answer("❌ Ошибка при добавлении канала!\n"
                                  "Проверьте необходимые прав в канале/группе для работы бота:\n"
                                  "\n✅ Изменение профиля канала/группы"
                                  "\n✅ Управление сообщениями"
@@ -348,7 +348,7 @@ async def create_giveaway_sponsor_channels(message: Message, state: FSMContext):
                                f"БОТУ НЕ ВЫДАЛИ ВСЕ ПРАВА АДМИНИСТРАТОРА КАНАЛА!\n\n"
                                f"{await get_user_creds(message.from_user.id)}:\n"
                                f"<blockquote>{message.text}</blockquote>")
-                await message.answer("❌ Ошибка при добавлении канала!"
+                await message.answer("❌ Ошибка при добавлении канала!\n"
                                      "Проверьте необходимые прав в канале/группе для работы бота:\n"
                                      "\n✅ Изменение профиля канала/группы"
                                      "\n✅ Управление сообщениями"
@@ -358,7 +358,7 @@ async def create_giveaway_sponsor_channels(message: Message, state: FSMContext):
             await send_log(f"Error adding sponsor channel: {e}\n\n"
                            f"{await get_user_creds(message.from_user.id)}:\n"
                            f"<blockquote>{message.text}</blockquote>")
-            await message.answer("❌ Ошибка при добавлении канала!"
+            await message.answer("❌ Ошибка при добавлении канала!\n"
                                  "Проверьте необходимые прав в канале/группе для работы бота:\n"
                                  "\n✅ Изменение профиля канала/группы"
                                  "\n✅ Управление сообщениями"
