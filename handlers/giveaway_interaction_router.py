@@ -96,7 +96,7 @@ async def start_join_giveaway(message: Message, command: CommandObject, session:
         await add_participant_to_redis(giveaway_id, user_id)
         await state.clear()
         await message.answer(f"🎉 <b>Поздравляем!</b>\n"
-                             f"Теперь Вы участник <a href='{giveaway.post_url}'>розыгрыша</a> #{giveaway_id}.!",
+                             f"Теперь Вы участник <a href='{giveaway.post_url}'>розыгрыша</a> #{giveaway_id}!",
                              reply_markup=await main_kb(await is_admin(message.from_user.id)))
         if end_count:
             if await redis_get_participants_count(giveaway_id) >= end_count:
