@@ -7,12 +7,12 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from create_bot import bot
 from db.pg_models import GiveawayStatus
-from db.pg_orm_query import orm_get_giveaway_by_id
+from db.pg_orm_query import orm_get_giveaway_by_id, orm_delete_giveaway, orm_get_user_id_by_giveaway_id
 from db.r_operations import redis_get_participants_count, redis_add_participant
 from keyboards.inline import get_callback_btns
 from tools.texts import encode_giveaway_id, channel_conditions_text
 from tools.utils import channel_info, get_bot_link_to_start, convert_id, get_channel_hyperlink, post_deleted, \
-    send_log, get_user_creds
+    send_log, get_user_creds, session
 
 
 async def get_giveaway_info_text(data: dict) -> str:
@@ -69,44 +69,60 @@ async def join_giveaway_link(giveaway_id: int) -> str:
     return link
 
 
+async def not_posted_giveaway(giveaway_id, error_text):
+    text = (f"Розыгрыш #{giveaway_id} не опубликован!\n"
+            f"Причина: {error_text}\n\n"
+            f"Розыгрыш был удалён из базы данных!")
+    user_id = await orm_get_user_id_by_giveaway_id(session=session, giveaway_id=giveaway_id)
+    await orm_delete_giveaway(session=session, giveaway_id=giveaway_id)
+    try:
+        await bot.send_message(chat_id=user_id, text=text)
+    except TelegramForbiddenError:
+        pass
+    await send_log(text=text + f"\n\n{await get_user_creds(user_id)}")
+
+
 async def post_giveaway(giveaway):
-    text = giveaway.text
-    buttons = {f"{giveaway.button}": f"{await join_giveaway_link(giveaway.id)}"}
-    text += "\n\n<b>Условия участия:</b>\n\n"
-    message = None
+    try:
+        text = giveaway.text
+        buttons = {f"{giveaway.button}": f"{await join_giveaway_link(giveaway.id)}"}
+        text += "\n\n<b>Условия участия:</b>\n\n"
+        message = None
 
-    if not giveaway.sponsor_channel_ids or giveaway.channel_id not in giveaway.sponsor_channel_ids:
-        channel = await channel_info(channel_id=giveaway.channel_id)
-        text += await channel_conditions_text(channel)
-
-    if giveaway.sponsor_channel_ids:
-        for channel_id in giveaway.sponsor_channel_ids:
-            channel = await channel_info(channel_id=channel_id)
+        if not giveaway.sponsor_channel_ids or giveaway.channel_id not in giveaway.sponsor_channel_ids:
+            channel = await channel_info(channel_id=giveaway.channel_id)
             text += await channel_conditions_text(channel)
 
-    if giveaway.extra_conditions:
-        text += f"\n{giveaway.extra_conditions}\n\n"
+        if giveaway.sponsor_channel_ids:
+            for channel_id in giveaway.sponsor_channel_ids:
+                channel = await channel_info(channel_id=channel_id)
+                text += await channel_conditions_text(channel)
 
-    if giveaway.end_datetime:
-        text += (f"\nРезультаты розыгрыша: "
-                 f"<b>{giveaway.end_datetime.strftime('%d.%m.%Y %H:%M')}</b>\n\n")
-    else:
-        text += f"\nРезультаты розыгрыша будут при достижении <b>{giveaway.end_count} участника(ов)</b>\n\n"
+        if giveaway.extra_conditions:
+            text += f"\n{giveaway.extra_conditions}\n\n"
 
-    if giveaway.media_type:
-        if giveaway.media_type == "photo":
-            message = await bot.send_photo(chat_id=giveaway.channel_id, photo=giveaway.media, caption=text,
-                                           reply_markup=await get_callback_btns(btns=buttons))
-        elif giveaway.media_type == "video":
-            message = await bot.send_video(chat_id=giveaway.channel_id, video=giveaway.media, caption=text,
-                                           reply_markup=await get_callback_btns(btns=buttons))
-        elif giveaway.media_type == "animation":
-            message = await bot.send_animation(chat_id=giveaway.channel_id, animation=giveaway.media, caption=text,
+        if giveaway.end_datetime:
+            text += (f"\nРезультаты розыгрыша: "
+                     f"<b>{giveaway.end_datetime.strftime('%d.%m.%Y %H:%M')}</b>\n\n")
+        else:
+            text += f"\nРезультаты розыгрыша будут при достижении <b>{giveaway.end_count} участника(ов)</b>\n\n"
+
+        if giveaway.media_type:
+            if giveaway.media_type == "photo":
+                message = await bot.send_photo(chat_id=giveaway.channel_id, photo=giveaway.media, caption=text,
                                                reply_markup=await get_callback_btns(btns=buttons))
-    else:
-        message = await bot.send_message(chat_id=giveaway.channel_id, text=text,
-                                         reply_markup=await get_callback_btns(btns=buttons))
-    return message
+            elif giveaway.media_type == "video":
+                message = await bot.send_video(chat_id=giveaway.channel_id, video=giveaway.media, caption=text,
+                                               reply_markup=await get_callback_btns(btns=buttons))
+            elif giveaway.media_type == "animation":
+                message = await bot.send_animation(chat_id=giveaway.channel_id, animation=giveaway.media, caption=text,
+                                                   reply_markup=await get_callback_btns(btns=buttons))
+        else:
+            message = await bot.send_message(chat_id=giveaway.channel_id, text=text,
+                                             reply_markup=await get_callback_btns(btns=buttons))
+        return message
+    except Exception as e:
+        await not_posted_giveaway(giveaway_id=giveaway.id, error_text="e")
 
 
 async def giveaway_post_notification(giveaway, post_url):
