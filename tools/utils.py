@@ -92,14 +92,16 @@ async def not_admin(chat_id: int, user_id: int = None):
                                                      f"Все связанные с этим каналом/группой розыгрыши завершены "
                                                      f"принудительно без определения победителей.")
     except Exception as e:
-        await send_log(f"Error in utils.py:93: {e}")
+        # await send_log(f"Error in utils.py:93: {e}")
+        pass
     try:
         giveaways_ids = await orm_get_giveaways_by_sponsor_channel_id(session, chat_id)
         for giveaway in giveaways_ids:
             await orm_update_giveaway_status(session, giveaway, GiveawayStatus.FINISHED)
         await orm_delete_channel(session, chat_id)
     except Exception as e:
-        await send_log(f"Error in utils.py:93: {e}")
+        # await send_log(f"Error in utils.py:93: {e}")
+        pass
 
 
 async def post_deleted(giveaway_id: int):
