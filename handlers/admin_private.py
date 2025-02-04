@@ -8,7 +8,7 @@ from aiogram.types import Message, CallbackQuery, BufferedInputFile
 from aiogram.utils.chat_action import ChatActionSender
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from create_bot import bot
+from create_bot import bot, env_admins
 from db.pg_orm_query import orm_count_users, orm_get_mailing_list, orm_get_required_channels, orm_is_required_channel, \
     orm_change_required_channel, orm_get_users_with_giveaways, orm_get_user_giveaways, orm_get_giveaway_by_id, \
     orm_get_top_giveaways_by_participants, orm_get_last_giveaway_id, orm_get_active_giveaways_w_participants, \
@@ -22,7 +22,7 @@ from keyboards.inline import get_callback_btns
 from keyboards.reply import get_keyboard, admin_kb
 from tools.giveaway_utils import get_giveaway_post
 from tools.graph import create_graph
-from tools.mailing import simple_mailing
+from tools.mailing import simple_mailing, simple_mailing_test
 from tools.texts import cbk_msg, format_giveaways_for_admin
 from tools.utils import msg_to_cbk, channel_info, get_user_creds
 
@@ -110,6 +110,7 @@ async def btns_to_data(message: Message, state: FSMContext):
                            reply_markup=await get_callback_btns(btns=data["buttons"]))
     await message.answer("Приступим к рассылке?",
                          reply_markup=await get_callback_btns(btns={"Да": "confirm_mailing",
+                                                                    "Тестовая рассылка": "test_mailing",
                                                                     "Переделать": "cancel_mailing"}))
 
 
@@ -124,18 +125,32 @@ async def cancel_mailing(callback: CallbackQuery, state: FSMContext):
         await callback.message.answer("Отправь сообщение, которое ты хочешь рассылать")
 
 
-@admin_private_router.callback_query(StateFilter("*"), F.data == "confirm_mailing")
+@admin_private_router.callback_query(StateFilter("*"), F.data.in_(["confirm_mailing", "test_mailing"]))
 async def confirm_mailing(callback: CallbackQuery, state: FSMContext, session: AsyncSession):
     async with ChatActionSender.typing(bot=bot, chat_id=callback.message.from_user.id):
-        await callback.answer("")
-        await redis_set_mailing_users(await orm_get_mailing_list(session))
-        data = await state.get_data()
-        await redis_set_mailing_msg(str(data.get("message")))
-        await redis_set_msg_from(str(callback.message.chat.id))
-        await redis_set_mailing_btns(data.get("buttons"))
-        await state.clear()
 
-        success, notsuccess, blocked, elapsed_time_str = await simple_mailing()
+        if callback.data == "test_mailing":
+            await callback.answer("")
+            test_users = env_admins
+            data = await state.get_data()
+            btns = data.get("buttons")
+            ch_id = callback.message.chat.id
+            msg_id = data.get("message")
+            await state.clear()
+
+            success, notsuccess, blocked, elapsed_time_str = await simple_mailing_test(test_users, btns, msg_id, ch_id)
+
+        else:
+            await callback.answer("")
+            await redis_set_mailing_users(await orm_get_mailing_list(session))
+            data = await state.get_data()
+            await redis_set_mailing_msg(str(data.get("message")))
+            await redis_set_msg_from(str(callback.message.chat.id))
+            await redis_set_mailing_btns(data.get("buttons"))
+            await state.clear()
+
+            success, notsuccess, blocked, elapsed_time_str = await simple_mailing()
+
         if elapsed_time_str == "":
             elapsed_time_str = "менее секунды"
 
@@ -143,7 +158,7 @@ async def confirm_mailing(callback: CallbackQuery, state: FSMContext, session: A
             text=f"Рассылка успешна.\n\nРезультаты:\nУспешно - {success}\nНеудачно - {notsuccess}\n\n"
                  f"Затрачено времени: <b>{elapsed_time_str}</b>\n\n"
                  f"<span class='tg-spoiler'>Бот заблокирован у {blocked} пользователя(ей)</span>",
-            reply_markup=get_keyboard("Главное меню", "Сделать рассылку")
+            reply_markup=get_keyboard("Главное меню")
         )
 
 
