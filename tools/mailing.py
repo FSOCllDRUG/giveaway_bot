@@ -52,7 +52,6 @@ async def simple_mailing():
     msg_id = await redis_get_mailing_msg()
     ch_id = await redis_get_msg_from()
     btns: dict = await redis_get_mailing_btns()
-    print(btns)
     total_users = len(users)
 
     pbar = tqdm.tqdm(total=total_users, desc="Mailing progress")
@@ -72,17 +71,18 @@ async def simple_mailing():
                                        reply_markup=get_callback_btns(btns=btns))
             else:
                 await bot.copy_message(chat_id=str(user), from_chat_id=str(ch_id), message_id=str(msg_id))
-            logger.info(f"Sent message to {user}")
+            # logger.info(f"Sent message to {user}")
             success += 1
             await redis_delete_mailing_user(user)
         except Exception as e:
             error_message = str(e)
             if re.search(r"Forbidden: bot was blocked by the user", error_message):
-                logger.warning(f"User {user} blocked the bot. Removing from mailing list.")
+                # logger.warning(f"User {user} blocked the bot. Removing from mailing list.")
                 await redis_delete_mailing_user(user)
                 blocked += 1
             else:
-                logger.error(f"Failed to send message to {user}: {e}")
+                # logger.error(f"Failed to send message to {user}: {e}")
+                await redis_delete_mailing_user(user)
                 notsuccess += 1
 
         pbar.update(1)
