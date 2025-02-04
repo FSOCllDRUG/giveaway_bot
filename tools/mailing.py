@@ -155,7 +155,7 @@ async def simple_mailing_test(users: list[int], btns: dict = None, msg_id: int =
                 # logger.warning(f"User {user} blocked the bot.")
                 blocked += 1
             else:
-                # logger.error(f"Failed to send message to {user}: {e}")
+                logger.error(f"Failed to send message to {user}: {e}")
                 notsuccess += 1
 
         pbar.update(1)
