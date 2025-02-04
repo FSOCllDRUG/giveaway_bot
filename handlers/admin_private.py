@@ -88,7 +88,9 @@ async def get_message_for_mailing(message: Message, state: FSMContext):
     await state.set_state(Mailing.buttons)
     await message.reply("Будем добавлять URL-кнопки к сообщению?", reply_markup=await get_callback_btns(
         btns={"Добавить кнопки": "add_btns",
-              "Приступить к рассылке": "confirm_mailing", "Сделать другое сообщение для рассылки": "cancel_mailing"}
+              "Приступить к рассылке": "confirm_mailing",
+              "Тестовая рассылка": "test_mailing",
+              "Сделать другое сообщение для рассылки": "cancel_mailing"}, sizes=(1,)
     )
                         )
 
@@ -109,7 +111,7 @@ async def btns_to_data(message: Message, state: FSMContext):
         "message"],
                            reply_markup=await get_callback_btns(btns=data["buttons"]))
     await message.answer("Приступим к рассылке?",
-                         reply_markup=await get_callback_btns(btns={"Да": "confirm_mailing",
+                         reply_markup=await get_callback_btns(btns={"Приступить к рассылке": "confirm_mailing",
                                                                     "Тестовая рассылка": "test_mailing",
                                                                     "Переделать": "cancel_mailing"}))
 
