@@ -68,7 +68,7 @@ async def simple_mailing():
         try:
             if btns:
                 await bot.copy_message(chat_id=str(user), from_chat_id=str(ch_id), message_id=str(msg_id),
-                                       reply_markup=get_callback_btns(btns=btns))
+                                       reply_markup=await get_callback_btns(btns=btns))
             else:
                 await bot.copy_message(chat_id=str(user), from_chat_id=str(ch_id), message_id=str(msg_id))
             # logger.info(f"Sent message to {user}")
@@ -144,7 +144,7 @@ async def simple_mailing_test(users: list[int], btns: dict = None, msg_id: int =
         try:
             if btns:
                 await bot.copy_message(chat_id=str(user), from_chat_id=str(ch_id), message_id=str(msg_id),
-                                       reply_markup=get_callback_btns(btns=btns))
+                                       reply_markup=await get_callback_btns(btns=btns))
             else:
                 await bot.copy_message(chat_id=str(user), from_chat_id=str(ch_id), message_id=str(msg_id))
             # logger.info(f"Sent message to {user}")
