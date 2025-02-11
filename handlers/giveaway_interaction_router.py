@@ -60,7 +60,7 @@ async def start_join_giveaway(message: Message, command: CommandObject, session:
         await message.answer("Розыгрыш не найден.", reply_markup=await main_kb(await is_admin(message.from_user.id)))
         return
     elif giveaway.status == GiveawayStatus.FINISHED:
-        await message.answer(f"Розыгрыш #{giveaway_id} уже завершён.", reply_markup=await main_kb(await is_admin(
+        await message.answer(f"❌ Розыгрыш #{giveaway_id} уже завершён.", reply_markup=await main_kb(await is_admin(
             message.from_user.id)))
         return
     user_id = message.from_user.id
