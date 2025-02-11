@@ -121,6 +121,11 @@ async def redis_get_participants(giveaway_id: int):
     return json.loads(participants)
 
 
+async def redis_get_last_participants(giveaway_id: int):
+    participants = await redis_conn.lrange(f"giveaway:{giveaway_id}", -20, -1)
+    return [int(x) for x in participants]
+
+
 # Удаляет словарь с юзерами через неделю timedelta(weeks=1)
 async def redis_expire_giveaway(giveaway_id: int):
     await redis_conn.expire(f"giveaway:{giveaway_id}", timedelta(weeks=1))

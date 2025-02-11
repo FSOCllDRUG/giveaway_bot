@@ -14,7 +14,8 @@ from db.pg_orm_query import orm_count_users, orm_get_mailing_list, orm_get_requi
     orm_get_top_giveaways_by_participants, orm_get_last_giveaway_id, orm_get_active_giveaways_w_participants, \
     orm_get_user_regs_by_month
 from db.r_operations import (redis_set_mailing_users, redis_set_mailing_msg, redis_set_msg_from,
-                             redis_set_mailing_btns, get_active_users_count, redis_get_participants_count)
+                             redis_set_mailing_btns, get_active_users_count, redis_get_participants_count,
+                             redis_get_last_participants)
 from filters.chat_type import ChatType
 from filters.is_admin import IsAdmin
 from handlers.giveaway_interaction_router import status_mapping
@@ -22,6 +23,7 @@ from keyboards.inline import get_callback_btns
 from keyboards.reply import get_keyboard, admin_kb
 from tools.giveaway_utils import get_giveaway_post
 from tools.graph import create_graph
+from tools.logs_channel import send_log
 from tools.mailing import simple_mailing, simple_mailing_test
 from tools.texts import cbk_msg, format_giveaways_for_admin
 from tools.utils import msg_to_cbk, channel_info, get_user_creds
@@ -190,8 +192,6 @@ async def change_required_status(callback: CallbackQuery, session: AsyncSession)
     await callback.answer("")
     channel_id = int(callback.data.split("_")[-2])
     status = str(callback.data.split("_")[-1])
-    print(type(status))
-    print(status)
     channel = await channel_info(channel_id=channel_id)
     if status == "True":
         required = False
@@ -200,6 +200,7 @@ async def change_required_status(callback: CallbackQuery, session: AsyncSession)
     await orm_change_required_channel(session, channel_id, required)
     text = f"Канал {channel.title} установлен {'' if required else 'не'}обязательным для " \
            f"постинга"
+    await send_log(text)
     await callback.message.answer(text=text,
                                   reply_markup=await admin_kb()
                                   )
@@ -289,6 +290,7 @@ async def get_user_giveaway(message: Message, session: AsyncSession):
         btns.update({"Изменить условия завершения розыгрыша": f"change_end_condition_{giveaway_id}"})
     if status == "✅ Опубликован":
         btns.update({"Подвести итоги прямо сейчас": f"finish_giveaway_{giveaway_id}"})
+        btns.update({"Последние 20 участников": f"get_last_participants_{giveaway_id}"})
     if status == "❌ Завершён":
         btns.update({"Получить ссылку на результаты": f"get_result_link_{giveaway_id}"})
         btns.update({"Выбрать дополнительных победителей": f"add_winners_{giveaway_id}"})
@@ -367,3 +369,30 @@ async def get_graph(message: Message, session: AsyncSession):
         await orm_get_user_regs_by_month(session=session, start_date=start_date, end_date=end_date))
     input_file = BufferedInputFile(graph_image.getvalue(), filename=f"graph.png")
     await message.answer_photo(photo=input_file)
+
+
+@admin_private_router.callback_query(F.data.startswith("get_last_participants_"))
+async def get_last_participants(callback: CallbackQuery):
+    await callback.answer("")
+    giv_id = int(callback.data.split("_")[-1])
+    ids = await redis_get_last_participants(giv_id)
+    if not ids:
+        await callback.answer("❌ Пользователи не найдены!")
+        return
+    else:
+        initial_text = f"Последние участники розыгрыша #{giv_id}:\n\n"
+        text = initial_text
+        messages = []
+        limit = 4096
+        for us_id in ids:
+            ans_text = f"{await get_user_creds(us_id)}\n"
+            if len(text) + len(ans_text) > limit:
+                messages.append(text)
+                text = initial_text + ans_text
+            else:
+                text += ans_text
+
+        messages.append(text)
+        for msg in messages:
+            await callback.message.answer(msg)
+
