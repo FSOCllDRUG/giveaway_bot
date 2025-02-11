@@ -121,10 +121,16 @@ async def redis_get_participants(giveaway_id: int):
     return json.loads(participants)
 
 
+# Функция, которая возвращает последние 20 участников розыгрыша
 async def redis_get_last_participants(giveaway_id: int):
     key = f"giveaway:{giveaway_id}"
-    last_20_participants = await redis_conn.lrange(key, -20, -1)
-    return [int(x) for x in last_20_participants]
+
+    participants_json = await redis_conn.get(key)
+    if participants_json is None:
+        return []
+
+    participants = json.loads(participants_json)  # Декодируем JSON-строку в список
+    return participants[-20:]  # Возвращаем последние 20 участников
 
 
 # Удаляет словарь с юзерами через неделю timedelta(weeks=1)
