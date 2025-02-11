@@ -193,7 +193,8 @@ async def update_giveaway_message(session: AsyncSession, giveaway_id: int, chat_
                                     f"\n{channel.title} {channel.invite_link}\n\n{e}")
         except TelegramForbiddenError as e:
             await send_log(text=f"Error while updating button for giveaway:\n/usergive{giveaway_id}"
-                                f"\n{channel.title} {channel.invite_link}\n\n{e}")
+                                f"\n{channel.title if channel else chat_id} {channel.invite_link if channel else ''}\n\n"
+                                f"{e}")
 
 
 async def add_participant_to_redis(giveaway_id: int, user_id: int):
