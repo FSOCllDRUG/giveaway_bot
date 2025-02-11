@@ -256,6 +256,9 @@ async def get_user_giveaways(message: Message, session: AsyncSession):
 async def get_user_giveaway(message: Message, session: AsyncSession):
     giveaway_id = int(message.text.split("/usergive")[1].strip())
     giveaway = await orm_get_giveaway_by_id(session=session, giveaway_id=giveaway_id)
+    if not giveaway:
+        await message.answer("❌ Розыгрыш не найден!")
+        return
     status = status_mapping.get(giveaway.status, "Неизвестный статус")
     post_url = giveaway.post_url
     participants_count = giveaway.participants_count if status == "Завершён" else await redis_get_participants_count(
