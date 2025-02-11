@@ -311,13 +311,15 @@ async def orm_get_due_giveaways(session: AsyncSession, current_time: datetime):
     return not_published, ready_for_results
 
 
-async def orm_update_giveaway_status(session: AsyncSession, giveaway_id: int, status: GiveawayStatus):
+async def orm_update_giveaway_status(session: AsyncSession, giveaway_id: int, status: GiveawayStatus, participants_count: Optional[int] = None):
     result = await session.execute(
         select(Giveaway).where(Giveaway.id == giveaway_id)
     )
     giveaway = result.scalar_one_or_none()
     if giveaway:
         giveaway.status = status
+        if participants_count is not None:
+            giveaway.participants_count = participants_count
         await session.commit()
         await session.close()
         return True
@@ -431,3 +433,19 @@ async def orm_get_user_regs_by_month(session: AsyncSession, start_date: datetime
     result = await session.execute(query)
     data = result.fetchall()
     return data
+
+
+async def orm_get_sponsors_count(session: AsyncSession, giveaway_id: int):
+    query = select(func.count(Giveaway.sponsor_channel_ids)).where(Giveaway.id == giveaway_id)
+    result = await session.execute(query)
+    await session.close()
+    return result.scalar()
+
+
+async def orm_delete_sponsor(session: AsyncSession, giveaway_id: int, sponsor_channel_id: int):
+    query = update(Giveaway).where(Giveaway.id == giveaway_id).values(
+        sponsor_channel_ids=Giveaway.sponsor_channel_ids - [sponsor_channel_id]
+    )
+    await session.execute(query)
+    await session.commit()
+    await session.close()

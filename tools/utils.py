@@ -7,7 +7,8 @@ from create_bot import bot, env_admins
 from db.pg_engine import session_maker
 from db.pg_models import GiveawayStatus
 from db.pg_orm_query import orm_get_giveaways_by_sponsor_channel_id, orm_update_giveaway_status, orm_delete_channel, \
-    orm_get_user_id_by_giveaway_id
+    orm_get_user_id_by_giveaway_id, orm_delete_sponsor, orm_get_sponsors_count
+from db.r_operations import redis_get_participants_count
 from tools.logs_channel import send_log
 
 session = session_maker()
@@ -86,18 +87,27 @@ async def channel_info(channel_id: int):
 
 
 async def not_admin(chat_id: int, user_id: int = None):
+    text = (f"{await get_user_creds(user_id)} удалил меня из канала/группы {chat_id}!\n"
+            f"Канал удалён из базы данных.\n"
+            f"Идёт обработка связанных с каналом розыгрышей...")
     try:
-        await bot.send_message(chat_id=user_id, text=f"Ты удалил меня из канала/группы {chat_id}!\n"
-                                                     f"Канал удалён из базы данных.\n"
-                                                     f"Все связанные с этим каналом/группой розыгрыши завершены "
-                                                     f"принудительно без определения победителей.")
+        await send_log(text)
+        await bot.send_message(chat_id=user_id,
+                               text=text)
     except Exception as e:
         # await send_log(f"Error in utils.py:93: {e}")
         pass
     try:
         giveaways_ids = await orm_get_giveaways_by_sponsor_channel_id(session, chat_id)
         for giveaway in giveaways_ids:
-            await orm_update_giveaway_status(session, giveaway, GiveawayStatus.FINISHED)
+            if await orm_get_sponsors_count(session, giveaway) > 1:
+                await orm_delete_sponsor(session, giveaway, chat_id)
+                await send_log(text=f"Спонсор {chat_id} был удалён из розыгрыша #{giveaway}")
+            else:
+                participants_count = await redis_get_participants_count(giveaway.id)
+                await orm_update_giveaway_status(session, giveaway, GiveawayStatus.FINISHED,
+                                                 participants_count=participants_count)
+                await send_log(text=f"Розыгрыш #{giveaway} завершён принудительно, так как удалён последний спонсор.")
         await orm_delete_channel(session, chat_id)
     except Exception as e:
         # await send_log(f"Error in utils.py:93: {e}")
