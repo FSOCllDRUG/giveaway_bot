@@ -122,8 +122,9 @@ async def redis_get_participants(giveaway_id: int):
 
 
 async def redis_get_last_participants(giveaway_id: int):
-    participants = await redis_conn.lrange(f"giveaway:{giveaway_id}", -20, -1)
-    return [int(x) for x in participants]
+    key = f"giveaway:{giveaway_id}"
+    last_20_participants = await redis_conn.lrange(key, -20, -1)
+    return [int(x) for x in last_20_participants]
 
 
 # Удаляет словарь с юзерами через неделю timedelta(weeks=1)
