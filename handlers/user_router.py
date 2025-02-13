@@ -359,7 +359,7 @@ async def support(message: Message):
 async def developer(message: Message):
     await message.answer(f"Контакты разработчика:\n"
                          f"Telegram: <b><i><u><a href='tg://user?id=6092344340'>*НАПИСАТЬ*</a></u></i></b>\n"
-                         f"Email: fsoclldrug@gmail.com")
+                         f"@xtc_hydra")
 
 # @user_router.message(F.photo)
 # async def get_photo_id(message: Message):
