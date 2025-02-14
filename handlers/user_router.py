@@ -352,7 +352,7 @@ async def support(message: Message):
                          "<b>использованию бота:</b>\n"
                          "https://t.me/WinGiveInfo\n\n"
 
-                         "Если Вы сделаете все по инструкции,то у Вас все получится!")
+                         "<i>Делайте все строго по инструкции! Тогда у вас все получится.</i>")
 
 
 @user_router.message(Command("developer"))
