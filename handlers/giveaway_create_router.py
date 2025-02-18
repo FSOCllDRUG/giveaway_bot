@@ -17,7 +17,7 @@ from keyboards.inline import get_callback_btns, captcha_toggle
 from tools.giveaway_utils import get_giveaway_preview, get_channel_hyperlink, \
     get_giveaway_info_text
 from tools.logs_channel import send_log
-from tools.texts import datetime_example, captcha_on_text, captcha_off_text
+from tools.texts import datetime_example, captcha_on_text, captcha_off_text, long_caption
 from tools.utils import channel_info, remove_premium_emoji_tags, get_user_creds
 
 giveaway_create_router = Router()
@@ -40,6 +40,7 @@ class CreateGiveaway(StatesGroup):
     end_count = State()
     captcha = State()
     media_group_id = State()  # To avoid sending warning about "only one media" more than once
+    caption_retry = State()
 
 
 @giveaway_create_router.message(Command("new_give"))
@@ -132,18 +133,15 @@ async def create_giveaway_button(callback: CallbackQuery, state: FSMContext):
     await state.update_data(button=button)
     await state.set_state(CreateGiveaway.sponsor_channels)
     await callback.message.answer("✅ Текст кнопки успешно сохранен!")
-    await callback.message.answer("📊 Добавьте каналы, на которые пользователям нужно будет подписаться "
-                                  "для участия в розыгрыше.\n"
-                                  "<b>❗️ Подписка на канал, в котором проводится розыгрыш, "
+    await callback.message.answer("❗️ Добавьте каналы, на которые пользователям нужно будет"
+                                  "подписаться для участия в розыгрыше.\n"
+                                  "<b>Подписка на канал, в котором проводится розыгрыш, "
                                   "обязательна и включена по умолчанию.</b>\n\n"
-
                                   "Чтобы добавить канал, нужно:\n"
-                                  "1. <b>Добавить бота</b> (@WinGiveBot)\n"
-                                  "в Ваш канал <u>в роли администратора</u>\n"
-                                  "(это нужно, чтобы бот мог проверить подписан ли пользователь на канал).\n"
-                                  "2. <b>Отправить боту канал\n"
-                                  "в формате</b> @channelname ❗️\n"
-                                  "(или переслать пост из канала).\n\n"
+                                  "1. <b>Добавить бота</b> (@WinGiveBot) в ваш канал <u>в роли администратора</u> (это "
+                                  "нужно, чтобы бот мог проверить подписан ли пользователь на канал).\n"
+                                  "2. <b>Отправить боту канал в формате</b> @channelname или ссылку на канал"
+                                  "(он <u>НЕ</u> должен быть приватным‼️), или переслать пост из канала).\n\n"
 
                                   "⚠️<b>Если Вы хотите, чтобы участие в розыгрыше было без подписок на канал, "
                                   "нажмите кнопку ниже:</b>",
@@ -552,12 +550,50 @@ async def create_giveaway_end_datetime(message: Message, state: FSMContext):
                              "результатов сохранено!")
         await message.answer("❗️<b>Превью розыгрыша:</b>")
         data = await state.get_data()
-        await get_giveaway_preview(data=data, user_id=message.from_user.id, bot=bot)
+        response = await get_giveaway_preview(data=data, user_id=message.from_user.id, bot=bot)
+        if response is None:
+            await message.answer(text=long_caption,
+                                 reply_markup=await get_callback_btns(btns={
+                                     "Изменить описание": "edit_caption",
+                                     "Отменить создание розыгрыша": "cancel"
+                                 }, sizes=(1,)))
+            await state.set_state(CreateGiveaway.caption_retry)
+            return
         await message.answer(text=await get_giveaway_info_text(data),
                              reply_markup=await captcha_toggle("off"))
         await state.set_state(CreateGiveaway.captcha)
     except ValueError:
         await message.answer("❌ Некорректный формат <b><u>дата и времени</u></b>!")
+
+
+@giveaway_create_router.callback_query(StateFilter(CreateGiveaway.caption_retry), F.data == "edit_caption")
+async def create_giveaway_caption_retry_cb(callback: CallbackQuery, state: FSMContext):
+    await callback.answer("")
+    data = await state.get_data()
+    prev_caption = data.get("caption")
+    await callback.message.answer("Текст прежнего описания: \n\n"
+                                  "<pre>" + prev_caption + "</pre>\n\n")
+    await callback.message.answer("📝 Введите новое описание розыгрыша:")
+
+
+@giveaway_create_router.message(StateFilter(CreateGiveaway.caption_retry), F.text)
+async def create_giveaway_caption_retry_text(message: Message, state: FSMContext):
+    new_caption = message.text
+    await state.update_data(caption=new_caption)
+    await message.answer("❗️<b>Превью розыгрыша:</b>")
+    data = await state.get_data()
+    response = await get_giveaway_preview(data=data, user_id=message.from_user.id, bot=bot)
+    if response is None:
+        await message.answer(text=long_caption,
+                             reply_markup=await get_callback_btns(btns={
+                                 "Изменить описание": "edit_caption",
+                                 "Отменить создание розыгрыша": "cancel"
+                             }, sizes=(1,)))
+        await state.set_state(CreateGiveaway.caption_retry)
+        return
+    await message.answer(text=await get_giveaway_info_text(data),
+                         reply_markup=await captcha_toggle("off"))
+    await state.set_state(CreateGiveaway.captcha)
 
 
 @giveaway_create_router.message(StateFilter(CreateGiveaway.end_count), F.text)
@@ -568,10 +604,18 @@ async def create_giveaway_end_count(message: Message, state: FSMContext):
         count = int(message.text)
         await state.update_data(end_count=count)
         await message.answer(f"✅ Количество участников для подведения результатов сохранено: {count}")
-        data = await state.get_data()
         await state.update_data(captcha=False)
         await message.answer("❗️<b>Превью розыгрыша:</b>")
-        await get_giveaway_preview(data=data, user_id=message.from_user.id, bot=bot)
+        data = await state.get_data()
+        response = await get_giveaway_preview(data=data, user_id=message.from_user.id, bot=bot)
+        if response is None:
+            await message.answer(text=long_caption,
+                                 reply_markup=await get_callback_btns(btns={
+                                     "Изменить описание": "edit_caption",
+                                     "Отменить создание розыгрыша": "cancel"
+                                 }, sizes=(1,)))
+            await state.set_state(CreateGiveaway.caption_retry)
+            return
         await message.answer(text=await get_giveaway_info_text(data),
                              reply_markup=await captcha_toggle("off"))
         await state.set_state(CreateGiveaway.captcha)

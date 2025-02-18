@@ -1,6 +1,7 @@
 import asyncio
 import datetime
 
+import aiogram.exceptions
 from aiogram.exceptions import TelegramBadRequest, TelegramForbiddenError
 from aiogram.types import InlineKeyboardMarkup, InlineKeyboardButton
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -47,19 +48,26 @@ async def get_giveaway_preview(data: dict, user_id: int = None, bot=None):
                  f">{datetime.datetime.fromisoformat(data['end_datetime']).strftime('%d.%m.%Y %H:%M')}</b>\n\n")
     else:
         text += f"\nРезультаты розыгрыша будут при достижении <b>{data['end_count']} участника(ов)</b>\n\n"
-    if "media_type" in data:
-        if data["media_type"] == "photo":
-            await bot.send_photo(chat_id=user_id, photo=data["media"], caption=text,
-                                 reply_markup=await get_callback_btns(btns={f"{data['button']}": "empty"}))
-        elif data["media_type"] == "video":
-            await bot.send_video(chat_id=user_id, video=data["media"], caption=text,
-                                 reply_markup=await get_callback_btns(btns={f"{data['button']}": "empty"}))
-        elif data["media_type"] == "animation":
-            await bot.send_animation(chat_id=user_id, animation=data["media"], caption=text,
+    try:
+        if "media_type" in data:
+            if data["media_type"] == "photo":
+                await bot.send_photo(chat_id=user_id, photo=data["media"], caption=text,
                                      reply_markup=await get_callback_btns(btns={f"{data['button']}": "empty"}))
-    else:
-        await bot.send_message(chat_id=user_id, text=text,
-                               reply_markup=await get_callback_btns(btns={f"{data['button']}": "empty"}))
+            elif data["media_type"] == "video":
+                await bot.send_video(chat_id=user_id, video=data["media"], caption=text,
+                                     reply_markup=await get_callback_btns(btns={f"{data['button']}": "empty"}))
+            elif data["media_type"] == "animation":
+                await bot.send_animation(chat_id=user_id, animation=data["media"], caption=text,
+                                         reply_markup=await get_callback_btns(btns={f"{data['button']}": "empty"}))
+        else:
+            await bot.send_message(chat_id=user_id, text=text,
+                                   reply_markup=await get_callback_btns(btns={f"{data['button']}": "empty"}))
+    except aiogram.exceptions.TelegramBadRequest as e:
+        if "is too long" in str(e):
+            await bot.send_message(chat_id=user_id, text="❌Ошибка. Текст слишком длинный!")
+            await send_log(text=f"Ошибка при создании розыгрыша у пользователя {await get_user_creds(user_id)}: "
+                                f"{e}\n\n❌Ошибка. Текст слишком длинный!")
+            return None
 
 
 async def join_giveaway_link(giveaway_id: int) -> str:
