@@ -551,7 +551,7 @@ async def create_giveaway_end_datetime(message: Message, state: FSMContext):
         await message.answer("❗️<b>Превью розыгрыша:</b>")
         data = await state.get_data()
         response = await get_giveaway_preview(data=data, user_id=message.from_user.id, bot=bot)
-        if response is None:
+        if response is False:
             await message.answer(text=long_caption,
                                  reply_markup=await get_callback_btns(btns={
                                      "Изменить описание": "edit_caption",
@@ -583,7 +583,7 @@ async def create_giveaway_caption_retry_text(message: Message, state: FSMContext
     await message.answer("❗️<b>Превью розыгрыша:</b>")
     data = await state.get_data()
     response = await get_giveaway_preview(data=data, user_id=message.from_user.id, bot=bot)
-    if response is None:
+    if response is False:
         await message.answer(text=long_caption,
                              reply_markup=await get_callback_btns(btns={
                                  "Изменить описание": "edit_caption",
@@ -608,7 +608,7 @@ async def create_giveaway_end_count(message: Message, state: FSMContext):
         await message.answer("❗️<b>Превью розыгрыша:</b>")
         data = await state.get_data()
         response = await get_giveaway_preview(data=data, user_id=message.from_user.id, bot=bot)
-        if response is None:
+        if response is False:
             await message.answer(text=long_caption,
                                  reply_markup=await get_callback_btns(btns={
                                      "Изменить описание": "edit_caption",

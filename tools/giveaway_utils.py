@@ -62,12 +62,13 @@ async def get_giveaway_preview(data: dict, user_id: int = None, bot=None):
         else:
             await bot.send_message(chat_id=user_id, text=text,
                                    reply_markup=await get_callback_btns(btns={f"{data['button']}": "empty"}))
+        return True
     except aiogram.exceptions.TelegramBadRequest as e:
         if "is too long" in str(e):
             await bot.send_message(chat_id=user_id, text="❌Ошибка. Текст слишком длинный!")
             await send_log(text=f"Ошибка при создании розыгрыша у пользователя {await get_user_creds(user_id)}: "
                                 f"{e}\n\n❌Ошибка. Текст слишком длинный!")
-            return None
+            return False
 
 
 async def join_giveaway_link(giveaway_id: int) -> str:
