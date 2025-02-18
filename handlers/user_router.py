@@ -345,14 +345,14 @@ async def confirm_post(callback: CallbackQuery, state: FSMContext):
 
 @user_router.message(F.text == "Поддержка")
 async def support(message: Message):
-    await message.answer("💬<b>Служба поддержки:</b>\n"
-                         "https://t.me/mrktmng\n\n"
+    await message.answer("💬<b>Служба поддержки: </b>"
+                         "@ALXMNG1\n\n"
 
                          "<b>🗒️Инструкция по</b>\n"
                          "<b>использованию бота:</b>\n"
                          "https://t.me/WinGiveInfo\n\n"
 
-                         "Если Вы сделаете все по инструкции,то у Вас все получится!")
+                         "<i>Делайте все строго по инструкции! Тогда у вас все получится.</i>")
 
 
 @user_router.message(Command("developer"))
