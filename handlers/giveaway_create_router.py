@@ -141,7 +141,7 @@ async def create_giveaway_button(callback: CallbackQuery, state: FSMContext):
                                   "1. <b>Добавить бота</b> (@WinGiveBot) в ваш канал <u>в роли администратора</u> (это "
                                   "нужно, чтобы бот мог проверить подписан ли пользователь на канал).\n"
                                   "2. <b>Отправить боту канал в формате</b> @channelname или ссылку на канал"
-                                  "(он <u>НЕ</u> должен быть приватным‼️), или переслать пост из канала).\n\n"
+                                  " (он <u>НЕ</u> должен быть приватным‼️), или переслать пост из канала.\n\n"
 
                                   "⚠️<b>Если Вы хотите, чтобы участие в розыгрыше было без подписок на канал, "
                                   "нажмите кнопку ниже:</b>",
@@ -570,7 +570,7 @@ async def create_giveaway_end_datetime(message: Message, state: FSMContext):
 async def create_giveaway_caption_retry_cb(callback: CallbackQuery, state: FSMContext):
     await callback.answer("")
     data = await state.get_data()
-    prev_caption = data.get("caption")
+    prev_caption = data.get("text")
     await callback.message.answer("Текст прежнего описания: \n\n"
                                   "<pre>" + prev_caption + "</pre>\n\n")
     await callback.message.answer("📝 Введите новое описание розыгрыша:")
@@ -579,7 +579,7 @@ async def create_giveaway_caption_retry_cb(callback: CallbackQuery, state: FSMCo
 @giveaway_create_router.message(StateFilter(CreateGiveaway.caption_retry), F.text)
 async def create_giveaway_caption_retry_text(message: Message, state: FSMContext):
     new_caption = message.text
-    await state.update_data(caption=new_caption)
+    await state.update_data(text=new_caption)
     await message.answer("❗️<b>Превью розыгрыша:</b>")
     data = await state.get_data()
     response = await get_giveaway_preview(data=data, user_id=message.from_user.id, bot=bot)
