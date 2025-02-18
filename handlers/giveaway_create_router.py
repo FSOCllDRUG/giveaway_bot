@@ -571,8 +571,8 @@ async def create_giveaway_caption_retry_cb(callback: CallbackQuery, state: FSMCo
     await callback.answer("")
     data = await state.get_data()
     prev_caption = data.get("text")
-    await callback.message.answer("Текст прежнего описания: \n\n"
-                                  "<pre>" + prev_caption + "</pre>\n\n")
+    await callback.message.answer("Текст прежнего описания:")
+    await callback.message.answer(prev_caption)
     await callback.message.answer("📝 Введите новое описание розыгрыша:")
 
 
