@@ -92,6 +92,7 @@ class Giveaway(Base):
 
     __table_args__ = (
         Index('idx_giveaway_user_id', 'user_id'),
+        Index('idx_giveaway_id', 'id'),
         Index('idx_giveaway_status', 'status'),
         Index('idx_giveaway_post_datetime', 'post_datetime'),
     )

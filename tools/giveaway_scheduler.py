@@ -11,8 +11,7 @@ from db.pg_engine import session_maker
 from db.pg_models import GiveawayStatus
 from db.pg_orm_query import orm_get_giveaway_by_id, orm_get_due_giveaways, \
     orm_update_giveaway_status, orm_update_giveaway_post_data, orm_add_winners, orm_update_participants_count
-from db.r_operations import redis_create_giveaway, redis_get_participants, redis_expire_giveaway, \
-    redis_get_participants_count
+from db.r_operations import redis_create_giveaway, redis_get_participants, redis_expire_giveaway
 from tools.giveaway_utils import post_giveaway, giveaway_post_notification, giveaway_result_notification, \
     update_giveaway_message, winners_notification
 from tools.texts import encode_giveaway_id
@@ -92,12 +91,12 @@ async def publish_giveaway_results(giveaway_id):
         except TelegramBadRequest:
             message = await bot.send_message(chat_id=giveaway.channel_id,
                                              text=giveaway_end_text)
-        await giveaway_result_notification(message, giveaway)
         await orm_update_giveaway_status(session, giveaway.id, GiveawayStatus.FINISHED)
         if winners:
             await orm_add_winners(session, giveaway.id, winners)
         await orm_update_participants_count(session, giveaway.id, len(participants))
         await redis_expire_giveaway(giveaway.id)
+        await giveaway_result_notification(message, giveaway)
 
 
 async def schedule_giveaways():
