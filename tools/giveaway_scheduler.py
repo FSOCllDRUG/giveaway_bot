@@ -1,7 +1,7 @@
 import asyncio
 import datetime
 from random import shuffle
-from sqlalchemy import transactional
+from sqlalchemy import declarative_transactional as transactional
 
 
 import pytz
