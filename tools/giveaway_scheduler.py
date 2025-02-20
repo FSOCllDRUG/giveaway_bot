@@ -1,6 +1,8 @@
 import asyncio
 import datetime
 from random import shuffle
+from sqlalchemy import transactional
+
 
 import pytz
 from aiogram.exceptions import TelegramBadRequest
@@ -37,6 +39,7 @@ async def publish_giveaway(giveaway_id):
         await orm_update_giveaway_post_data(session, giveaway_id, post_url, message_id)
 
 
+@transactional
 async def publish_giveaway_results(giveaway_id):
     giveaway = await orm_get_giveaway_by_id(session, giveaway_id)
     msg_id = giveaway.message_id
