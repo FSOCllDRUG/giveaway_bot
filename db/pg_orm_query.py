@@ -259,23 +259,21 @@ async def orm_get_giveaway_by_id(session: AsyncSession, giveaway_id: int):
 
 
 async def orm_add_winners(session: AsyncSession, giveaway_id: int, new_winners: list[int]):
-    result = await session.execute(
-        select(Giveaway).where(Giveaway.id == giveaway_id)
-    )
-    giveaway = result.scalar_one_or_none()
-    if giveaway:
-        # Объединяем текущий список победителей с новыми победителями
-        current_winners = giveaway.winner_ids or []
-        updated_winners = current_winners + new_winners
-
-        # Обновляем запись в базе данных
-        await session.execute(
-            update(Giveaway).where(Giveaway.id == giveaway_id).values(winner_ids=updated_winners)
+    async with session.begin():
+        result = await session.execute(
+            select(Giveaway).where(Giveaway.id == giveaway_id)
         )
-        await session.commit()
-        await session.close()
-        return True
-    await session.close()
+        giveaway = result.scalar_one_or_none()
+        if giveaway:
+            # Объединяем текущий список победителей с новыми победителями
+            current_winners = giveaway.winner_ids or []
+            updated_winners = current_winners + new_winners
+
+            # Обновляем запись в базе данных
+            await session.execute(
+                update(Giveaway).where(Giveaway.id == giveaway_id).values(winner_ids=updated_winners)
+            )
+            return True
     return False
 
 
