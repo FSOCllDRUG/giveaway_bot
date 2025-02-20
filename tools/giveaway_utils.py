@@ -228,6 +228,7 @@ async def add_participant_to_redis(giveaway_id: int, user_id: int):
     await redis_add_participant(giveaway_id, user_id)
 
 
+# Можно ускорить(по запросу)
 async def check_giveaway_text(session: AsyncSession, giveaway_id: int) -> str | list[str | Any]:
     # Получаем данные о розыгрыше
     giveaway = await orm_get_giveaway_by_id(session=session, giveaway_id=giveaway_id)
