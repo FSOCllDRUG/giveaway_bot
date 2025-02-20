@@ -104,9 +104,9 @@ async def publish_giveaway_results(giveaway_id):
                 await winners_notification(winners=winners, message=message, link=verify_link)
 
         except TelegramBadRequest as e:
-            message = await bot.send_message(chat_id=giveaway.channel_id,
-                                             text=giveaway_end_text)
             await send_log(text=f"Розыгрыш #{giveaway.id}\n\n{e}")
+            # message = await bot.send_message(chat_id=giveaway.channel_id,
+            #                                  text=giveaway_end_text)
         if winners:
             await orm_add_winners(session, giveaway.id, winners)
         await redis_expire_giveaway(giveaway.id)
