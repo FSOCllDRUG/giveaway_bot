@@ -124,11 +124,11 @@ async def schedule_giveaways():
                     await asyncio.sleep(1 / 20)
                     continue
 
-                if giveaway.end_count is not None:
-                    participants_count = await redis_get_participants_count(giveaway.id)
-                    if participants_count >= giveaway.end_count:
-                        await publish_giveaway_results(giveaway.id)
-                        await asyncio.sleep(1 / 20)
+                # if giveaway.end_count is not None:
+                #     participants_count = await redis_get_participants_count(giveaway.id)
+                #     if participants_count >= giveaway.end_count:
+                #         await publish_giveaway_results(giveaway.id)
+                #         await asyncio.sleep(1 / 20)
 
         await asyncio.sleep(60)
 
