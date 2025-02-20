@@ -125,8 +125,8 @@ async def start_check_giveaway(message: Message, command: CommandObject, session
                              reply_markup=await main_kb(await is_admin(message.from_user.id)))
     else:
         messages = await check_giveaway_text(session=session, giveaway_id=giveaway_id)
-        for message in messages:
-            await message.answer(text=message,
+        for msg in messages:
+            await message.answer(text=msg,
                                  reply_markup=await main_kb(await is_admin(message.from_user.id)))
         return
 
