@@ -14,6 +14,7 @@ from db.r_operations import redis_create_giveaway, redis_get_participants, redis
 from keyboards.inline import get_callback_btns
 from tools.giveaway_utils import post_giveaway, giveaway_post_notification, giveaway_result_notification, \
     update_giveaway_message, winners_notification
+from tools.logs_channel import send_log
 from tools.texts import encode_giveaway_id
 from tools.utils import convert_id, is_subscribed, get_bot_link_to_start, get_user_creds
 
@@ -102,9 +103,10 @@ async def publish_giveaway_results(giveaway_id):
                                                  text=giveaway_end_text, reply_markup=result_check)
                 await winners_notification(winners=winners, message=message, link=verify_link)
 
-        except TelegramBadRequest:
+        except TelegramBadRequest as e:
             message = await bot.send_message(chat_id=giveaway.channel_id,
                                              text=giveaway_end_text)
+            await send_log(text=f"Розыгрыш #{giveaway.id}\n\n{e}")
         if winners:
             await orm_add_winners(session, giveaway.id, winners)
         await redis_expire_giveaway(giveaway.id)
