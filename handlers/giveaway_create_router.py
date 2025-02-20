@@ -373,7 +373,7 @@ async def set_winners_count(callback: CallbackQuery, state: FSMContext):
 
 @giveaway_create_router.message(StateFilter(CreateGiveaway.winners_count))
 async def set_winners_count(message: Message, state: FSMContext, session: AsyncSession):
-    if message.text.isdigit() and int(message.text) > 0:
+    if message.text.isdigit() and 100 >= int(message.text) > 0:
         count = int(message.text)
         await state.update_data(winners_count=count)
         await message.answer(f"✅ Количество победителей успешно сохранено: {count}")
@@ -390,7 +390,8 @@ async def set_winners_count(message: Message, state: FSMContext, session: AsyncS
                              reply_markup=await get_callback_btns(btns=btns, sizes=(1,)))
 
     else:
-        await message.answer("❌ Некорректное <b><u>число</u></b> победителей!")
+        await message.answer("❌ Некорректное <b><u>число</u></b> победителей!\n"
+                             "Допустимые значения: от 1 до 100")
 
 
 @giveaway_create_router.callback_query(StateFilter(CreateGiveaway.channel_id), F.data.startswith("giv_channel_"))
