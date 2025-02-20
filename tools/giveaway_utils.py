@@ -143,7 +143,7 @@ async def giveaway_post_notification(giveaway, post_url):
     await bot.send_message(chat_id=giveaway.user_id, text=text)
 
 
-async def winners_notification(winners: list, message, link):
+async def winners_notification(winners: list, message, link=None, check_results=None):
     try:
         chat_id = message.chat.id
         clear_chat_id = await convert_id(chat_id)
@@ -152,15 +152,27 @@ async def winners_notification(winners: list, message, link):
         winners_list = ""
         for i, winner_id in enumerate(winners, start=1):
             winners_list += f"{i}. {await get_user_creds(winner_id)}\n"
+
+        max_length = 4096
         text = (f"🎉<b>Поздравляем!</b>\n\n"
                 f"Вы стали победителем <a href='{post_url}'>розыгрыша</a>!🎁\n\n"
                 f"<b>Благодарим за участие!</b>\n\n"
-                f"Список победителей:\n"
-                f"{winners_list}\n"
-                f"{link}")
+                f"Список победителей:\n")
+
+        if len(winners) < 100:
+            text += f"{winners_list}\n{link}"
+        else:
+            text += f"{winners_list}\n"
+
+        text_parts = [text[i:i+max_length] for i in range(0, len(text), max_length)]
+
         for winner in winners:
             await asyncio.sleep(1 / 20)
-            await bot.send_message(chat_id=winner, text=text)
+            for part in text_parts:
+                if len(winners) < 100:
+                    await bot.send_message(chat_id=winner, text=part)
+                else:
+                    await bot.send_message(chat_id=winner, text=part, reply_markup=check_results)
     except aiogram.exceptions.TelegramForbiddenError:
         # Можно добавить изменение статуса рассылки для юзера который заблокировал
         pass

@@ -2,7 +2,6 @@ import asyncio
 import datetime
 from random import shuffle
 
-
 import pytz
 from aiogram.exceptions import TelegramBadRequest
 
@@ -12,6 +11,7 @@ from db.pg_models import GiveawayStatus
 from db.pg_orm_query import orm_get_giveaway_by_id, orm_get_due_giveaways, \
     orm_update_giveaway_status, orm_update_giveaway_post_data, orm_add_winners, orm_update_participants_count
 from db.r_operations import redis_create_giveaway, redis_get_participants, redis_expire_giveaway
+from keyboards.inline import get_callback_btns
 from tools.giveaway_utils import post_giveaway, giveaway_post_notification, giveaway_result_notification, \
     update_giveaway_message, winners_notification
 from tools.texts import encode_giveaway_id
@@ -42,7 +42,8 @@ async def publish_giveaway_results(giveaway_id):
     msg_id = giveaway.message_id
     await update_giveaway_message(session, giveaway.id, giveaway.channel_id, giveaway.message_id)
     await asyncio.sleep(1 / 20)
-
+    verify_link = None
+    result_check = None
     if giveaway and giveaway.status != GiveawayStatus.FINISHED:
         # Получаем всех участников
         participants = await redis_get_participants(giveaway_id)
@@ -82,19 +83,30 @@ async def publish_giveaway_results(giveaway_id):
             giveaway_end_text = "Розыгрыш завершен, но подходящих победителей нет.\n\n"
 
         g_id = await encode_giveaway_id(giveaway.id)
-        verify_link = f"<a href='{await get_bot_link_to_start()}checkgive_{g_id}'>Проверить результаты</a>"
-        giveaway_end_text += verify_link
+        if len(winners) < 100:
+            verify_link = f"<a href='{await get_bot_link_to_start()}checkgive_{g_id}'>Проверить результаты</a>"
+            giveaway_end_text += verify_link
+        else:
+            result_check = await get_callback_btns(
+                btns={"Проверить результаты": f"{await get_bot_link_to_start()}checkgive_{g_id}"})
+
+        await orm_update_giveaway_status(session, giveaway.id, GiveawayStatus.FINISHED)
+        await orm_update_participants_count(session, giveaway.id, len(participants))
         try:
-            message = await bot.send_message(reply_to_message_id=msg_id, chat_id=giveaway.channel_id,
-                                             text=giveaway_end_text)
-            await winners_notification(winners=winners, message=message, link=verify_link)
+            if len(winners) < 100:
+                message = await bot.send_message(reply_to_message_id=msg_id, chat_id=giveaway.channel_id,
+                                                 text=giveaway_end_text)
+                await winners_notification(winners=winners, message=message, link=verify_link)
+            else:
+                message = await bot.send_message(reply_to_message_id=msg_id, chat_id=giveaway.channel_id,
+                                                 text=giveaway_end_text, reply_markup=result_check)
+                await winners_notification(winners=winners, message=message, link=verify_link)
+
         except TelegramBadRequest:
             message = await bot.send_message(chat_id=giveaway.channel_id,
                                              text=giveaway_end_text)
-        await orm_update_giveaway_status(session, giveaway.id, GiveawayStatus.FINISHED)
         if winners:
             await orm_add_winners(session, giveaway.id, winners)
-        await orm_update_participants_count(session, giveaway.id, len(participants))
         await redis_expire_giveaway(giveaway.id)
         await giveaway_result_notification(message, giveaway)
 
