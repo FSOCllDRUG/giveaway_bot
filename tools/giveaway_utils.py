@@ -1,5 +1,6 @@
 import asyncio
 import datetime
+from typing import Any
 
 import aiogram.exceptions
 from aiogram.exceptions import TelegramBadRequest, TelegramForbiddenError
@@ -131,7 +132,7 @@ async def post_giveaway(giveaway):
                                              reply_markup=await get_callback_btns(btns=buttons))
         return message
     except Exception as e:
-        await not_posted_giveaway(giveaway_id=giveaway.id, error_text="e")
+        await not_posted_giveaway(giveaway_id=giveaway.id, error_text=f"{e}")
 
 
 async def giveaway_post_notification(giveaway, post_url):
@@ -143,22 +144,26 @@ async def giveaway_post_notification(giveaway, post_url):
 
 
 async def winners_notification(winners: list, message, link):
-    chat_id = message.chat.id
-    clear_chat_id = await convert_id(chat_id)
-    message_id = message.message_id
-    post_url = f"https://t.me/c/{clear_chat_id}/{message_id}"
-    winners_list = ""
-    for i, winner_id in enumerate(winners, start=1):
-        winners_list += f"{i}. {await get_user_creds(winner_id)}\n"
-    text = (f"🎉<b>Поздравляем!</b>\n\n"
-            f"Вы стали победителем <a href='{post_url}'>розыгрыша</a>!🎁\n\n"
-            f"<b>Благодарим за участие!</b>\n\n"
-            f"Список победителей:\n"
-            f"{winners_list}\n"
-            f"{link}")
-    for winner in winners:
-        await asyncio.sleep(1 / 20)
-        await bot.send_message(chat_id=winner, text=text)
+    try:
+        chat_id = message.chat.id
+        clear_chat_id = await convert_id(chat_id)
+        message_id = message.message_id
+        post_url = f"https://t.me/c/{clear_chat_id}/{message_id}"
+        winners_list = ""
+        for i, winner_id in enumerate(winners, start=1):
+            winners_list += f"{i}. {await get_user_creds(winner_id)}\n"
+        text = (f"🎉<b>Поздравляем!</b>\n\n"
+                f"Вы стали победителем <a href='{post_url}'>розыгрыша</a>!🎁\n\n"
+                f"<b>Благодарим за участие!</b>\n\n"
+                f"Список победителей:\n"
+                f"{winners_list}\n"
+                f"{link}")
+        for winner in winners:
+            await asyncio.sleep(1 / 20)
+            await bot.send_message(chat_id=winner, text=text)
+    except aiogram.exceptions.TelegramForbiddenError:
+        # Можно добавить изменение статуса рассылки для юзера который заблокировал
+        pass
 
 
 async def giveaway_result_notification(message, giveaway):
@@ -202,7 +207,8 @@ async def update_giveaway_message(session: AsyncSession, giveaway_id: int, chat_
                                     f"\n{channel.title} {channel.invite_link}\n\n{e}")
         except TelegramForbiddenError as e:
             await send_log(text=f"Error while updating button for giveaway:\n/usergive{giveaway_id}"
-                                f"\n{channel.title if channel else chat_id} {channel.invite_link if channel else ''}\n\n"
+                                f"\n{channel.title if channel else chat_id} "
+                                f"{channel.invite_link if channel else ''}\n\n"
                                 f"{e}")
 
 
@@ -210,7 +216,7 @@ async def add_participant_to_redis(giveaway_id: int, user_id: int):
     await redis_add_participant(giveaway_id, user_id)
 
 
-async def check_giveaway_text(session: AsyncSession, giveaway_id: int) -> str:
+async def check_giveaway_text(session: AsyncSession, giveaway_id: int) -> str | list[str | Any]:
     # Получаем данные о розыгрыше
     giveaway = await orm_get_giveaway_by_id(session=session, giveaway_id=giveaway_id)
     if giveaway is None:
@@ -218,28 +224,43 @@ async def check_giveaway_text(session: AsyncSession, giveaway_id: int) -> str:
     elif giveaway.status == GiveawayStatus.PUBLISHED or giveaway.status == GiveawayStatus.NOT_PUBLISHED:
         return "Розыгрыш ещё не завершён."
     else:
-
         # Получаем количество участников
         participant_count = await redis_get_participants_count(giveaway_id)
 
         # Генерация текста о конкурсе
-        text = (f"Розыгрыш #{giveaway_id}\n"
-                f"<a href='{giveaway.post_url}'>Ссылка на розыгрыш</a>\n"
-                f"Кол-во участников: {participant_count}\n"
-                f"Кол-во победителей: {giveaway.winners_count}\n")
+        initial_text = (f"Розыгрыш #{giveaway_id}\n"
+                        f"<a href='{giveaway.post_url}'>Ссылка на розыгрыш</a>\n"
+                        f"Кол-во участников: {participant_count}\n"
+                        f"Кол-во победителей: {giveaway.winners_count}\n")
 
         # Проверяем, как завершился конкурс
         if giveaway.end_count is not None:
-            text += f"Розыгрыш завершен по кол-ву участников: {giveaway.end_count}\n"
+            initial_text += f"Розыгрыш завершен по кол-ву участников: {giveaway.end_count}\n"
         elif giveaway.end_datetime is not None:
-            text += f"Розыгрыш завершён по времени: {giveaway.end_datetime.strftime('%d.%m.%Y %H:%M')}\n"
-        c = 0
+            initial_text += f"Розыгрыш завершён по времени: {giveaway.end_datetime.strftime('%d.%m.%Y %H:%M')}\n"
+
+        text = "\nРезультаты розыгрыша:\n\nПобедители:\n"
+        messages = []
+        limit = 4096 - len(initial_text)
+
         # Добавляем результаты конкурса
-        text += "\nРезультаты розыгрыша:\n\nПобедители:\n"
+        c = 0
         for winner_id in giveaway.winner_ids:
             c += 1
-            text += f"{c}.{await get_user_creds(winner_id)}\n"
-        return text
+            winner_text = f"{c}.{await get_user_creds(winner_id)}\n"
+            if len(text) + len(winner_text) > limit:
+                if not messages:
+                    messages.append(initial_text + text)
+                else:
+                    messages.append(text)
+                text = ""
+                limit = 4096
+            text += winner_text
+
+        if text:
+            messages.append(text)
+
+        return messages
 
 
 async def get_giveaway_post(giveaway, user_id):
