@@ -131,7 +131,7 @@ async def start_add_channel(callback: CallbackQuery, state: FSMContext):
                                   "Необходимые права для работы бота:\n"
                                   "\n✅ Изменение профиля канала/группы"
                                   "\n✅ Управление сообщениями"
-                                  "\n✅ Добавление участников"
+                                  "\n✅ Добавление участников\n\n"
                                   "<b>После того как добавишь меня в канал, нажми на кнопку</b>⬇️",
                                   reply_markup=await get_callback_btns(btns={"Я добавил бота!": "added_to_channel"}))
     await state.set_state(AddChannel.channel_id)
