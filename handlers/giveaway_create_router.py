@@ -215,7 +215,7 @@ async def create_giveaway_sponsor_channels(message: Message, state: FSMContext):
                                      btns={"Достаточно каналов, двигаемся дальше!": "finish_sponsors"}))
         except Exception as e:
             if "member list is inaccessible" in str(e):
-                await message.answer("❌ Канал не доступен, проверьте права администратора.")
+                await message.answer("❌ Канал недоступен, проверьте права администратора.")
                 await send_log(f"Error adding sponsor channel: {e}\n\n"
                                f"БОТУ НЕ ВЫДАЛИ ВСЕ ПРАВА АДМИНИСТРАТОРА КАНАЛА!\n\n"
                                f"{await get_user_creds(message.from_user.id)}:\n"
@@ -278,7 +278,7 @@ async def create_giveaway_sponsor_channels(message: Message, state: FSMContext):
                                      btns={"Достаточно каналов, двигаемся дальше!": "finish_sponsors"}))
         except Exception as e:
             if "member list is inaccessible" in str(e):
-                await message.answer("❌ Канал не доступен, проверьте права администратора.")
+                await message.answer("❌ Канал недоступен, проверьте права администратора.")
                 await send_log(f"Error adding sponsor channel: {e}\n\n"
                                f"БОТУ НЕ ВЫДАЛИ ВСЕ ПРАВА АДМИНИСТРАТОРА КАНАЛА!\n\n"
                                f"{await get_user_creds(message.from_user.id)}:\n"
@@ -341,7 +341,7 @@ async def create_giveaway_sponsor_channels(message: Message, state: FSMContext):
                                      btns={"Достаточно каналов, двигаемся дальше!": "finish_sponsors"}))
         except Exception as e:
             if "member list is inaccessible" in str(e):
-                await message.answer("❌ Канал не доступен, проверьте права администратора.")
+                await message.answer("❌ Канал недоступен, проверьте права администратора.")
                 await send_log(f"Error adding sponsor channel: {e}\n\n"
                                f"БОТУ НЕ ВЫДАЛИ ВСЕ ПРАВА АДМИНИСТРАТОРА КАНАЛА!\n\n"
                                f"{await get_user_creds(message.from_user.id)}:\n"

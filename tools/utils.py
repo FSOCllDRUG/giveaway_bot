@@ -1,3 +1,4 @@
+import asyncio
 import re
 
 from aiogram.exceptions import TelegramBadRequest, TelegramForbiddenError
@@ -74,6 +75,7 @@ async def is_admin(user_id: int) -> bool:
 
 async def channel_info(channel_id: int):
     try:
+        await asyncio.sleep(1/20)
         chat = await bot.get_chat(channel_id)
         if chat.invite_link is not None:
             return chat
