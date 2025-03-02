@@ -115,6 +115,7 @@ async def not_admin(chat_id: int, user_id: int = None):
                 await send_log(text=f"Розыгрыш #{giveaway} завершён принудительно, так как удалён последний спонсор.")
         await orm_delete_channel(session, chat_id)
     except Exception as e:
+        await send_log(f"Ошибка в функции not_admin: {e}")
         # await send_log(f"Error in utils.py:93: {e}")
         pass
 
