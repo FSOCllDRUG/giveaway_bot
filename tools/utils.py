@@ -109,7 +109,7 @@ async def not_admin(chat_id: int, user_id: int = None):
                 await orm_delete_sponsor(session, giveaway, chat_id)
                 await send_log(text=f"Спонсор {chat_id} был удалён из розыгрыша #{giveaway}")
             else:
-                participants_count = await redis_get_participants_count(giveaway.id)
+                participants_count = await redis_get_participants_count(giveaway)
                 await orm_update_giveaway_status(session, giveaway, GiveawayStatus.FINISHED,
                                                  participants_count=participants_count)
                 await send_log(text=f"Розыгрыш #{giveaway} завершён принудительно, так как удалён последний спонсор.")
