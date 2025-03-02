@@ -38,6 +38,9 @@ async def is_subscribed(channels: list, user_id: int) -> bool:
                 return False
         except TelegramBadRequest as e:
             if "member list is inaccessible" in str(e):
+                await send_log(f"Недостаточно прав для проверки подписки в канале "
+                               f"{await get_channel_hyperlink(channel_id)}\n\n"
+                               f"{e}")
                 return False
     return True
 
