@@ -32,8 +32,8 @@ async def msg_to_cbk(message: Message):
 async def is_subscribed(channels: list, user_id: int) -> bool:
     for channel in channels:
         channel_id = channel.channel_id if hasattr(channel, 'channel_id') else channel
-        chat_member = await bot.get_chat_member(channel_id, user_id)
         try:
+            chat_member = await bot.get_chat_member(channel_id, user_id)
             if chat_member.status in ["restricted", "left", "kicked"]:
                 return False
         except TelegramBadRequest as e:
