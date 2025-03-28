@@ -434,10 +434,11 @@ async def orm_get_user_regs_by_month(session: AsyncSession, start_date: datetime
 
 
 async def orm_get_sponsors_count(session: AsyncSession, giveaway_id: int):
-    query = select(func.count(Giveaway.sponsor_channel_ids)).where(Giveaway.id == giveaway_id)
+    query = select(func.array_length(Giveaway.sponsor_channel_ids, 1)).where(Giveaway.id == giveaway_id)
     result = await session.execute(query)
-    await session.close()
+    print("==", result.scalar(), "==")
     return result.scalar()
+
 
 
 async def orm_delete_sponsor(session: AsyncSession, giveaway_id: int, sponsor_channel_id: int):
