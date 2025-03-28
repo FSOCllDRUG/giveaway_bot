@@ -309,7 +309,8 @@ async def orm_get_due_giveaways(session: AsyncSession, current_time: datetime):
     return not_published, ready_for_results
 
 
-async def orm_update_giveaway_status(session: AsyncSession, giveaway_id: int, status: GiveawayStatus, participants_count: Optional[int] = None):
+async def orm_update_giveaway_status(session: AsyncSession, giveaway_id: int, status: GiveawayStatus,
+                                     participants_count: Optional[int] = None):
     result = await session.execute(
         select(Giveaway).where(Giveaway.id == giveaway_id)
     )
@@ -436,7 +437,6 @@ async def orm_get_user_regs_by_month(session: AsyncSession, start_date: datetime
 async def orm_get_sponsors_count(session: AsyncSession, giveaway_id: int):
     query = select(func.array_length(Giveaway.sponsor_channel_ids, 1)).where(Giveaway.id == giveaway_id)
     result = await session.execute(query)
-    print("==", result.scalar(), "==")
     sponsor_count = result.scalar()
     return sponsor_count
 
