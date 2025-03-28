@@ -437,7 +437,8 @@ async def orm_get_sponsors_count(session: AsyncSession, giveaway_id: int):
     query = select(func.array_length(Giveaway.sponsor_channel_ids, 1)).where(Giveaway.id == giveaway_id)
     result = await session.execute(query)
     print("==", result.scalar(), "==")
-    return result.scalar()
+    sponsor_count = result.scalar()
+    return sponsor_count
 
 
 async def orm_delete_sponsor(session: AsyncSession, giveaway_id: int, sponsor_channel_id: int):
