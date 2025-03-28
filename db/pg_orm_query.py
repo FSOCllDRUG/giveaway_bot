@@ -440,11 +440,9 @@ async def orm_get_sponsors_count(session: AsyncSession, giveaway_id: int):
     return result.scalar()
 
 
-
 async def orm_delete_sponsor(session: AsyncSession, giveaway_id: int, sponsor_channel_id: int):
     query = update(Giveaway).where(Giveaway.id == giveaway_id).values(
-        sponsor_channel_ids=Giveaway.sponsor_channel_ids - [sponsor_channel_id]
+        sponsor_channel_ids=func.array_remove(Giveaway.sponsor_channel_ids, sponsor_channel_id)
     )
     await session.execute(query)
     await session.commit()
-    await session.close()
