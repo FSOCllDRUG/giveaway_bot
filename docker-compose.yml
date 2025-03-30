@@ -45,7 +45,8 @@ services:
     ports:
       - "8000:8000"
     volumes:
-      - ./logs:/app/logs
+      - logs_data:/app/logs
+      - migrations_data:/app/migrations
     working_dir: /app
     command: ["python", "run.py"]
     depends_on:
@@ -56,3 +57,5 @@ services:
 volumes:
   postgres_data:
   redis_data:
+  logs_data:
+  migrations_data:
