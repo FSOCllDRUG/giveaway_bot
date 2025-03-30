@@ -51,6 +51,11 @@ jobs:
     needs: build
     runs-on: ubuntu-latest
     steps:
+      - name: Set up SSH for deployment
+        uses: webfactory/ssh-agent@v0.5.3
+        with:
+          ssh-private-key: ${{ secrets.SSH_PRIVATE_KEY }}
+
       - name: Deploy to server
         uses: appleboy/ssh-action@v0.1.7
         with:
