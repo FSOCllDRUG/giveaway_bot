@@ -24,9 +24,9 @@ class User(Base):
 
     id: Mapped[int] = mapped_column(primary_key=True, autoincrement=True)
     user_id: Mapped[int] = mapped_column(BigInteger, unique=True, nullable=False)
-    username: Mapped[str] = mapped_column(String(32), nullable=True)
+    username: Mapped[str] = mapped_column(String, nullable=True)
     is_admin: Mapped[bool] = mapped_column(Boolean, default=False)
-    name: Mapped[str] = mapped_column(String(64), nullable=False)
+    name: Mapped[str] = mapped_column(String, nullable=False)
     mailing: Mapped[bool] = mapped_column(Boolean, default=True)
 
     giveaways: Mapped[list["Giveaway"]] = relationship("Giveaway", back_populates="creator")
