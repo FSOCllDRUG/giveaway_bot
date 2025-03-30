@@ -63,6 +63,5 @@ jobs:
           username: ${{ secrets.SERVER_USER }}
           key: ${{ secrets.DEPLOY_SSH_KEY }}
           script: |
-#            cd /path/to/your/project
             cd ${{ secrets.PATH_TO_PROJECT }}
             ./update_telegram_bot.sh
