@@ -65,7 +65,7 @@ async def start_join_giveaway(message: Message, command: CommandObject, session:
         return
     user_id = message.from_user.id
     if user_id in await redis_get_participants(giveaway_id):
-        await message.answer(f"❗️Вы уже участвуете в <a href='{giveaway.post_url}'>розыгрыше</a> м.",
+        await message.answer(f"❗️Вы уже участвуете в <a href='{giveaway.post_url}'>розыгрыше</a> №{giveaway_id}.",
                              reply_markup=await main_kb(await is_admin(message.from_user.id)))
         return
     sponsor_channels, captcha, end_count = await orm_get_join_giveaway_data(session=session,
