@@ -271,7 +271,7 @@ async def create_giveaway_sponsor_channels(message: Message, state: FSMContext):
                     ch_text += f"{c}) {await get_channel_hyperlink(channel)}\n"
                     c += 1
             ch_text += ("\n<b>❗️ Важно:</b>\n"
-                        "Не забирайте у бота права администратора канала, иначе"
+                        "Не забирайте у бота права администратора канала, иначе "
                         "проверка подписки происходить не будет!")
             await message.answer(text=ch_text,
                                  reply_markup=await get_callback_btns(
@@ -334,7 +334,7 @@ async def create_giveaway_sponsor_channels(message: Message, state: FSMContext):
                     ch_text += f"{c}) {await get_channel_hyperlink(channel)}\n"
                     c += 1
             ch_text += ("\n<b>❗️ Важно:</b>\n"
-                        "Не забирайте у бота права администратора канала, иначе"
+                        "Не забирайте у бота права администратора канала, иначе "
                         "проверка подписки происходить не будет!")
             await message.answer(text=ch_text,
                                  reply_markup=await get_callback_btns(
