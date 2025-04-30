@@ -60,12 +60,12 @@ async def start_join_giveaway(message: Message, command: CommandObject, session:
         await message.answer("Розыгрыш не найден.", reply_markup=await main_kb(await is_admin(message.from_user.id)))
         return
     elif giveaway.status == GiveawayStatus.FINISHED:
-        await message.answer(f"❌ Розыгрыш #{giveaway_id} уже завершён.", reply_markup=await main_kb(await is_admin(
+        await message.answer(f"❌ Розыгрыш №{giveaway_id} уже завершён.", reply_markup=await main_kb(await is_admin(
             message.from_user.id)))
         return
     user_id = message.from_user.id
     if user_id in await redis_get_participants(giveaway_id):
-        await message.answer(f"❗️Вы уже участвуете в <a href='{giveaway.post_url}'>розыгрыше</a> #{giveaway_id}.",
+        await message.answer(f"❗️Вы уже участвуете в <a href='{giveaway.post_url}'>розыгрыше</a> м.",
                              reply_markup=await main_kb(await is_admin(message.from_user.id)))
         return
     sponsor_channels, captcha, end_count = await orm_get_join_giveaway_data(session=session,
@@ -73,7 +73,7 @@ async def start_join_giveaway(message: Message, command: CommandObject, session:
 
     if await is_subscribed(channels=sponsor_channels, user_id=user_id) == False:
         await message.answer(
-            f"Чтобы участвовать в <a href='{giveaway.post_url}'>розыгрыше</a> #{giveaway_id}, <b><u>Вам необходимо "
+            f"Чтобы участвовать в <a href='{giveaway.post_url}'>розыгрыше</a> №{giveaway_id}, <b><u>Вам необходимо "
             f"подписаться</u></b> на все "
             f"указанные каналы в условиях.",
             reply_markup=await main_kb(await is_admin(message.from_user.id)))
@@ -96,7 +96,7 @@ async def start_join_giveaway(message: Message, command: CommandObject, session:
         await add_participant_to_redis(giveaway_id, user_id)
         await state.clear()
         await message.answer(f"🎉 <b>Поздравляем!</b>\n"
-                             f"Теперь Вы участник <a href='{giveaway.post_url}'>розыгрыша</a> #{giveaway_id}!",
+                             f"Теперь Вы участник <a href='{giveaway.post_url}'>розыгрыша</a> №{giveaway_id}!",
                              reply_markup=await main_kb(await is_admin(message.from_user.id)))
         if end_count:
             if await redis_get_participants_count(giveaway_id) >= end_count:
@@ -148,7 +148,7 @@ async def check_captcha(message: Message, state: FSMContext, session: AsyncSessi
         post_url = data.get('post_url')
         await add_participant_to_redis(giveaway_id, user_id)
         await message.answer(f"🎉 <b>Поздравляем!</b>\n"
-                             f"Теперь Вы участник <a href='{post_url}'>розыгрыша</a> #{giveaway_id}!")
+                             f"Теперь Вы участник <a href='{post_url}'>розыгрыша</a> №{giveaway_id}!")
         await state.clear()
         await add_participant_to_redis(giveaway_id, user_id)
         await redis_conn.delete(f"captcha:{user_id}")

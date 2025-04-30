@@ -80,7 +80,7 @@ async def join_giveaway_link(giveaway_id: int) -> str:
 
 
 async def not_posted_giveaway(giveaway_id, error_text):
-    text = (f"Розыгрыш #{giveaway_id} не опубликован!\n"
+    text = (f"Розыгрыш №{giveaway_id} не опубликован!\n"
             f"Причина: {error_text}\n\n"
             f"Розыгрыш был удалён из базы данных!")
     user_id = await orm_get_user_id_by_giveaway_id(session=session, giveaway_id=giveaway_id)
@@ -241,7 +241,7 @@ async def check_giveaway_text(session: AsyncSession, giveaway_id: int) -> str | 
         participant_count = await redis_get_participants_count(giveaway_id)
 
         # Генерация текста о конкурсе
-        initial_text = (f"Розыгрыш #{giveaway_id}\n"
+        initial_text = (f"Розыгрыш №{giveaway_id}\n"
                         f"<a href='{giveaway.post_url}'>Ссылка на розыгрыш</a>\n"
                         f"Кол-во участников: {participant_count}\n"
                         f"Кол-во победителей: {giveaway.winners_count}\n")

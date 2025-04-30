@@ -123,7 +123,7 @@ async def not_admin(chat_id: int, user_id: int = None):
 async def post_deleted(giveaway_id: int):
     try:
         user_id = await orm_get_user_id_by_giveaway_id(session, giveaway_id)
-        await bot.send_message(chat_id=user_id, text=f"Ты удалил пост розыгрыша #{giveaway_id}!\n"
+        await bot.send_message(chat_id=user_id, text=f"Ты удалил пост розыгрыша №{giveaway_id}!\n"
                                                      f"Розыгрыш завершён принудительно "
                                                      f"без определения победителей.\n"
                                                      f"/mygive{giveaway_id}")
