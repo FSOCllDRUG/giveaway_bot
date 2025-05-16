@@ -65,17 +65,3 @@ jobs:
           script: |
             cd ${{ secrets.PATH_TO_PROJECT }}
             ./update_telegram_bot.sh
-
-  cleanup:
-    needs: deploy
-    runs-on: ubuntu-latest
-    steps:
-      - name: Delete old container versions
-        uses: actions/delete-package-versions@v4
-        with:
-          package-name: fsoclldrug/giveaway_bot
-          package-type: container
-          min-versions-to-keep: 1
-          delete-only-untagged-versions: false
-          num-old-versions-to-delete: 1
-          token: ${{ secrets.GHCR_TOKEN }}
