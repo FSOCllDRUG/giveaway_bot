@@ -78,4 +78,4 @@ jobs:
           min-versions-to-keep: 1
           delete-only-untagged-versions: false
         env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GITHUB_TOKEN: ${{ secrets.GHCR_TOKEN }}
