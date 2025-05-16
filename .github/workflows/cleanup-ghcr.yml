@@ -20,10 +20,10 @@ jobs:
           echo "PACKAGE=giveaway_bot" >> $GITHUB_ENV
 
       - name: Authenticate gh CLI
-        uses: cli/cli-action@v2
+        uses: cli/cli@v2
 
       - name: Login via GitHub Token
-        run: echo "${{ secrets.GHCR_TOKEN }}" | gh auth login --with-token
+        run: echo "${{ secrets.GITHUB_TOKEN }}" | gh auth login --with-token
 
       - name: Get all image versions (GHCR)
         id: list_versions
