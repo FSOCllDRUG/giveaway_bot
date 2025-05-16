@@ -77,5 +77,5 @@ jobs:
           package-type: container
           min-versions-to-keep: 1
           delete-only-untagged-versions: false
-        env:
-          GITHUB_TOKEN: ${{ secrets.GHCR_TOKEN }}
+          num-old-versions-to-delete: 1
+          token: ${{ secrets.GHCR_TOKEN }}
