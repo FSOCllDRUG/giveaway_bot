@@ -20,7 +20,7 @@ jobs:
           echo "PACKAGE=giveaway_bot" >> $GITHUB_ENV
 
       - name: Authenticate gh CLI
-        uses: cli/cli@v2
+        uses: actions/cli@v2  # Corrected this line
 
       - name: Login via GitHub Token
         run: echo "${{ secrets.GITHUB_TOKEN }}" | gh auth login --with-token
