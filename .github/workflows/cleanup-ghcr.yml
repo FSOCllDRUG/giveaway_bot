@@ -1,0 +1,54 @@
+name: Cleanup GHCR Images (keep latest only)
+
+on:
+  workflow_dispatch:
+
+jobs:
+  cleanup:
+    runs-on: ubuntu-latest
+
+    permissions:
+      packages: write
+      contents: read
+
+    steps:
+      - name: Set variables
+        id: vars
+        run: |
+          echo "REPO=${{ github.repository }}" >> $GITHUB_ENV
+          echo "OWNER=${{ github.repository_owner }}" >> $GITHUB_ENV
+          echo "PACKAGE=giveaway_bot" >> $GITHUB_ENV
+
+      - name: Authenticate gh CLI
+        uses: cli/cli-action@v2
+
+      - name: Login via GitHub Token
+        run: echo "${{ secrets.GHCR_TOKEN }}" | gh auth login --with-token
+
+      - name: Get all image versions (GHCR)
+        id: list_versions
+        run: |
+          echo "Fetching image versions for $OWNER/$PACKAGE"
+          gh api "users/$OWNER/packages/container/$PACKAGE/versions" \
+            --paginate \
+            --jq '.[].id' > versions.txt
+
+          echo "All version IDs:"
+          cat versions.txt
+
+      - name: Delete all but the latest version
+        run: |
+          KEEP=1
+          COUNT=$(wc -l < versions.txt)
+
+          echo "Found $COUNT versions. Will keep $KEEP"
+
+          if [ "$COUNT" -le "$KEEP" ]; then
+            echo "Nothing to delete"
+            exit 0
+          fi
+
+          tail -n +$((KEEP + 1)) versions.txt | while read version_id; do
+            echo "Deleting version ID: $version_id"
+            gh api --method DELETE "users/$OWNER/packages/container/$PACKAGE/versions/$version_id"
+          done
