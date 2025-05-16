@@ -19,11 +19,9 @@ jobs:
           echo "OWNER=${{ github.repository_owner }}" >> $GITHUB_ENV
           echo "PACKAGE=giveaway_bot" >> $GITHUB_ENV
 
-      - name: Authenticate gh CLI
-        uses: actions/cli@v2  # Corrected this line
-
-      - name: Login via GitHub Token
-        run: echo "${{ secrets.GITHUB_TOKEN }}" | gh auth login --with-token
+      - name: Login to GitHub CLI
+        run: |
+          echo "${{ secrets.GITHUB_TOKEN }}" | gh auth login --with-token
 
       - name: Get all image versions (GHCR)
         id: list_versions
