@@ -73,7 +73,7 @@ jobs:
       - name: Delete old container versions
         uses: actions/delete-package-versions@v4
         with:
-          package-name: giveaway_bot
+          package-name: FSOCllDRUG/giveaway_bot
           package-type: container
           min-versions-to-keep: 1
           delete-only-untagged-versions: false
