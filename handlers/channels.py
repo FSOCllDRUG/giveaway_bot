@@ -18,13 +18,14 @@ async def on_chat_member_updated(update: ChatMemberUpdated):
         await redis_temp_channel(user_id, chat_id)
         print(f"Bot promoted to admin in channel {chat_id} by user {user_id}")
         await send_log(f"Бот стал админом в канале {await get_channel_hyperlink(chat_id)}\n"
-                       f"Пользователь {await get_user_creds(user_id)}"
+                       f"Пользователь {await get_user_creds(user_id)}\n"
+                       f"#{chat_id}"
                        f"\n\n#права")
     if update.new_chat_member.status == 'left':
         chat_id = update.chat.id
         user_id = update.from_user.id
         print(f"Bot kicked from channel {chat_id} by user {user_id}")
-        await send_log(f"Бот кикнут из канала {chat_id}\n"
+        await send_log(f"Бот кикнут из канала #{chat_id}\n"
                        f"Пользователь {await get_user_creds(user_id)}"
                        f"\n\n#права")
         await not_admin(chat_id, user_id)
